@@ -27,7 +27,8 @@ function openObservation(observationId: string) { uni.navigateTo({ url: '/pages/
 function goProjects() { uni.switchTab({url:'/pages/projects/index'}); }
 function confirmDelete() {
   if (busy.value || !project.value) return;
-  uni.showModal({title:'删除项目？',content:'“'+project.value.name+'”及其 '+stats.value.observations+' 条观察、'+stats.value.photos+' 张本机照片将被删除，无法恢复。请先导出需要的资料。',confirmText:'删除',confirmColor:'#b1382e',success:async result=>{
+  const draftPhotos = (forest.value.drafts || []).filter(d => d.projectId === id.value).reduce((sum,d) => sum+d.photos.length,0);
+  uni.showModal({title:'删除项目？',content:'“'+project.value.name+'”及其 '+stats.value.observations+' 条观察、'+(stats.value.photos+draftPhotos)+' 张本机照片'+(draftPhotos?'（含草稿）':'')+'将被删除，无法恢复。请先导出需要的资料。',confirmText:'删除',confirmColor:'#b1382e',success:async result=>{
     if (!result.confirm || busy.value) return;
     deleting.value=true;
     try {

@@ -77,33 +77,39 @@ final class BaiduDirect {
    if(status!=200)throw new IOException("百度服务暂不可用（"+status+"）");return data;
   }finally{conn.disconnect();}
  }
- private String accessToken(JSONObject c) throws Exception {
-  if(!token.isEmpty()&&expires>System.currentTimeMillis())return token;
+ private String accessToken(JSONObject c,boolean verify) throws Exception {
+  if(!verify&&!token.isEmpty()&&expires>System.currentTimeMillis())return token;
+  // Explicit validation must contact Baidu, including after a prior success.
+  // A cached token cannot establish that a saved key is still valid.
+  token="";expires=0;
   String query="grant_type=client_credentials&client_id="+URLEncoder.encode(c.optString("key"),"UTF-8")+"&client_secret="+URLEncoder.encode(c.optString("secret"),"UTF-8");
   JSONObject data=post("https://aip.baidubce.com/oauth/2.0/token",query,null);
   token=data.getString("access_token");expires=System.currentTimeMillis()+Math.max(0,data.optLong("expires_in")-120)*1000;return token;
  }
- void request(String requestId,String image){
+ synchronized void request(String requestId,String image){
   if(requestId==null||!requestId.matches("[A-Za-z0-9_-]{1,100}"))return;
   if(!busy.compareAndSet(false,true)){reply(requestId,null,"请等待当前识别请求完成");return;}
   worker.execute(()->{
+   JSONObject response=null;String failure=null;
    try{
     JSONObject c=credentials();String key=c.optString("key");if(key.isEmpty())throw new IOException("请先填写百度识别密钥");
-    boolean bearer=key.startsWith("bce-v3/");String access=bearer?"":accessToken(c);
+    boolean bearer=key.startsWith("bce-v3/");String access=bearer?"":accessToken(c,image==null||image.isEmpty());
     if(image==null||image.isEmpty()){
      // Bearer credentials require a business request; never upload a photo automatically.
-     if(bearer){reply(requestId,new JSONObject().put("authenticated",false).put("needsPhoto",true),null);return;}
-     reply(requestId,new JSONObject().put("authenticated",true),null);return;
+     response=bearer?new JSONObject().put("authenticated",false).put("needsPhoto",true):new JSONObject().put("authenticated",true);
+    }else{
+     if(image.length()>4*1024*1024||!image.matches("[A-Za-z0-9+/]+={0,2}"))throw new IOException("照片编码无效或过大");
+     long wait=nextCall-System.currentTimeMillis();if(wait>0)Thread.sleep(wait);nextCall=System.currentTimeMillis()+600;
+     String endpoint="https://aip.baidubce.com/rest/2.0/image-classify/v1/plant"+(bearer?"":"?access_token="+URLEncoder.encode(access,"UTF-8"));
+     JSONObject data=post(endpoint,"image="+URLEncoder.encode(image,"UTF-8"),bearer?key:null);
+     JSONArray raw=data.getJSONArray("result"),candidates=new JSONArray();
+     for(int i=0;i<Math.min(5,raw.length());i++){JSONObject r=raw.getJSONObject(i);double score=r.getDouble("score");if(score<0||score>1||!Double.isFinite(score))throw new IOException("百度返回评分异常");candidates.put(new JSONObject().put("name",r.getString("name")).put("scientificName","").put("score",score));}
+     response=new JSONObject().put("provider","baidu-plant").put("candidates",candidates);
     }
-    if(image.length()>4*1024*1024||!image.matches("[A-Za-z0-9+/]+={0,2}"))throw new IOException("照片编码无效或过大");
-    long wait=nextCall-System.currentTimeMillis();if(wait>0)Thread.sleep(wait);nextCall=System.currentTimeMillis()+600;
-    String endpoint="https://aip.baidubce.com/rest/2.0/image-classify/v1/plant"+(bearer?"":"?access_token="+URLEncoder.encode(access,"UTF-8"));
-    JSONObject data=post(endpoint,"image="+URLEncoder.encode(image,"UTF-8"),bearer?key:null);
-    JSONArray raw=data.getJSONArray("result"),candidates=new JSONArray();
-    for(int i=0;i<Math.min(5,raw.length());i++){JSONObject r=raw.getJSONObject(i);double score=r.getDouble("score");if(score<0||score>1||!Double.isFinite(score))throw new IOException("百度返回评分异常");candidates.put(new JSONObject().put("name",r.getString("name")).put("scientificName","").put("score",score));}
-    reply(requestId,new JSONObject().put("provider","baidu-plant").put("candidates",candidates),null);
-   }catch(Exception e){String message=e instanceof IOException?e.getMessage():"识别连接失败，请检查网络后重试";if(message==null||message.contains("https:")||message.length()>100)message="识别连接失败或超时，请稍后重试";reply(requestId,null,message);}
+   }catch(Exception e){failure=e instanceof IOException?e.getMessage():"识别连接失败，请检查网络后重试";if(failure==null||failure.contains("https:")||failure.length()>100)failure="识别连接失败或超时，请稍后重试";}
    finally{busy.set(false);}
+   // Release the single-request lock before JS starts the next photo or saves keys.
+   reply(requestId,response,failure);
   });
  }
  private void reply(String id,JSONObject result,String error){

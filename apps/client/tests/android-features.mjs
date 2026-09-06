@@ -42,6 +42,7 @@ try{
   const image2=await page.screenshot({clip:{x:40,y:20,width:90,height:90}});
   const chooser=page.waitForEvent('filechooser');await byId('choose-photos').click();
   await (await chooser).setFiles([{name:'test-a.png',mimeType:'image/png',buffer:image1},{name:'test-b.png',mimeType:'image/png',buffer:image2}]);
+  await page.getByText('已选 2 张',{exact:true}).waitFor();
   await page.locator('.grouping uni-switch').click();
   await byId('capture-note').locator('textarea').fill('离线采集备注');
   await context.setOffline(true);await byId('save-observations').click();await byId('start-recognition').waitFor();

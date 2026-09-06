@@ -51,7 +51,6 @@ public final class MainActivity extends Activity {
     private Uri cameraUri;
     private File cameraFile;
     private volatile String captureProject = "";
-    private volatile boolean captureDelivered;
     private String pendingCsv;
     private BaiduDirect baidu;
     private FileExport fileExport;
@@ -149,6 +148,12 @@ public final class MainActivity extends Activity {
             @Override public boolean onShowFileChooser(WebView view, ValueCallback<Uri[]> callback, FileChooserParams params) {
                 if (imageCallback != null) imageCallback.onReceiveValue(null);
                 imageCallback = callback;
+                if (getSharedPreferences("capture-pending",0).getBoolean("ready",false)) {
+                    imageCallback.onReceiveValue(null);
+                    imageCallback = null;
+                    Toast.makeText(MainActivity.this, "请先保存上一张照片后重试", Toast.LENGTH_LONG).show();
+                    return true;
+                }
                 String project = captureProject;
                 releaseCapture();
                 captureProject = project;
@@ -208,13 +213,13 @@ public final class MainActivity extends Activity {
     private void cleanOldCaptures() {
         File[] files = new File(getCacheDir(), "captures").listFiles();
         if (files == null) return;
-        for (File file : files) if (file.getName().matches("plant_[A-Za-z0-9_-]+\\.jpg") && System.currentTimeMillis() - file.lastModified() > 86400000L) file.delete();
+        String pending = getSharedPreferences("capture-pending",0).getString("name", "");
+        for (File file : files) if (!file.getName().equals(pending) && file.getName().matches("plant_[A-Za-z0-9_-]+\\.jpg") && System.currentTimeMillis() - file.lastModified() > 86400000L) file.delete();
     }
     private void releaseCapture() {
         if (cameraUri != null) revokeUriPermission(cameraUri, Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
         if (cameraFile != null) cameraFile.delete();
         cameraFile = null; cameraUri = null;
-        captureDelivered = false;
         captureProject = "";
         getSharedPreferences("capture-pending",0).edit().clear().commit();
     }
@@ -249,7 +254,6 @@ public final class MainActivity extends Activity {
             if (id != null && id.matches("[A-Za-z0-9_-]{1,100}")) captureProject = id;
         }
         @JavascriptInterface public String pendingCapture() {
-            if (captureDelivered) return "";
             android.content.SharedPreferences prefs = getSharedPreferences("capture-pending",0);
             String name = prefs.getString("name", "");
             if (!prefs.getBoolean("ready",false) || !name.matches("plant_[A-Za-z0-9_-]+\\.jpg")) return "";
@@ -258,7 +262,13 @@ public final class MainActivity extends Activity {
             try { return new org.json.JSONObject().put("uri",ORIGIN+"/__capture/"+name).put("name",name).put("bytes",photo.length()).put("projectId",prefs.getString("project","")).toString(); }
             catch(Exception error) { return ""; }
         }
-        @JavascriptInterface public void releaseCapture(){runOnUiThread(() -> MainActivity.this.releaseCapture());}
+        @JavascriptInterface public void releaseCapture(String uri) {
+            // A late acknowledgement must never delete a newer capture.
+            runOnUiThread(() -> {
+                String name = getSharedPreferences("capture-pending",0).getString("name", "");
+                if (!name.isEmpty() && (ORIGIN + "/__capture/" + name).equals(uri)) MainActivity.this.releaseCapture();
+            });
+        }
         @JavascriptInterface public boolean saveBaidu(String key,String secret){return baidu.save(key,secret);}
         @JavascriptInterface public boolean baiduConfigured(){return baidu.configured();}
         @JavascriptInterface public void requestBaidu(String id,String image){baidu.request(id,image);}
@@ -306,7 +316,6 @@ public final class MainActivity extends Activity {
             }
             if (!selected.isEmpty() && cameraFile != null) getSharedPreferences("capture-pending",0).edit().putBoolean("ready",true).commit();
             if (imageCallback != null) {
-                captureDelivered = !selected.isEmpty();
                 imageCallback.onReceiveValue(selected.isEmpty() ? null : selected.toArray(new Uri[0]));
             }
             else if (web != null && !selected.isEmpty()) web.evaluateJavascript("window.dispatchEvent(new Event('forest-capture-ready'))",null);

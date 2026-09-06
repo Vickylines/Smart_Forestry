@@ -4,7 +4,7 @@
 
 An Android app for field plant surveys: create projects, capture photos, identify plants with Baidu, review names, and export records with original photos.
 
-**First public beta: v0.3.0-beta.1.** [Download the APK](https://github.com/Vickylines/Smart_Forestry/releases/tag/v0.3.0-beta.1).
+**Current beta: v0.3.0-beta.2.** [Download the APK](https://github.com/Vickylines/Smart_Forestry/releases/tag/v0.3.0-beta.2).
 
 ## Getting started
 
@@ -17,6 +17,8 @@ An Android app for field plant surveys: create projects, capture photos, identif
 The APK contains no identification credentials. Credentials are encrypted with AES-GCM using an Android Keystore key; they are excluded from exports and app backups. Photos are uploaded to Baidu only when an identification task is submitted. Identification requires internet access and the appropriate Baidu service permissions/quota. The authentication check does not verify remaining quota. No live plant-identification accuracy benchmark was performed for this release.
 
 The app starts without sample data. Upgrades remove old examples while keeping actual observations added to an example project. Settings opens local projects, observations and photos. Project deletion requires confirmation and removes its records, tasks and local photos.
+
+Captured photos, notes and grouping are stored as local drafts. Reopen Add observation in the same project to continue. Saving the draft creates observations and identification tasks. Exports include saved observations; submit any drafts you want to back up first.
 
 ## Build and test
 
@@ -33,7 +35,7 @@ npm run build:h5
 npm run dev:h5
 ```
 
-In a second terminal, set `APP_URL` to the preview URL and run `npm run test:browser` and `npm run test:integration`. Integration tests use simulated Baidu bridge responses and do not consume provider quota.
+In a second terminal, set `APP_URL` to the preview URL and run `npm run test:browser`, `npm run test:integration`, and `npm run test:regressions`. Integration tests use simulated Baidu bridge responses and do not consume provider quota.
 
 ```powershell
 ./apps/android-preview/build.ps1 -JdkPath 'YOUR_JDK17' -SdkPath 'YOUR_ANDROID_SDK'
@@ -48,4 +50,4 @@ The distribution APK has application/WebView debugging disabled. `-Inspection` b
 - Android is the tested runtime. WeChat/app-plus resource compilation does not constitute device validation for those platforms.
 - The dependency audit still reports findings in the development compiler/server toolchain. Compatible security updates have been applied; see the [audit record](docs/Beta1验收记录.md). No development server is bundled in the APK. Do not expose the development server or use it to open untrusted projects.
 
-See the [bilingual release notes](docs/releases/v0.3.0-beta.1.md) and [validation record](docs/Beta1验收记录.md). Report issues with the app version, Android/device version, steps, and expected/actual results. Do not include keys or private photos.
+See the [bilingual release notes](docs/releases/v0.3.0-beta.2.md) and [validation record](docs/Beta2验收记录.md). Report issues with the app version, Android/device version, steps, and expected/actual results. Do not include keys or private photos.

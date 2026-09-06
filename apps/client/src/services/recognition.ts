@@ -1,6 +1,6 @@
 import { ref } from 'vue';
 import { forest, commit } from '../data/store';
-import { serviceUrl, parseRecognition, applyPhotoResult } from '../domain/recognition';
+import { parseRecognition, applyPhotoResult } from '../domain/recognition';
 import type { Photo } from '../domain/forest';
 import { photoUrl } from './media';
 import { directConfigured, requestBaidu } from './baidu';

@@ -75,7 +75,7 @@ function privacy() {
     <view class="section card settings-group">
       <button role="button" tabindex="0" class="settings-row" @click="privacy" data-testid="privacy"><text class="grow">存储与隐私</text><AppIcon name="chevron" :size="16" /></button>
     </view>
-    <text class="version">智慧林业 · 0.3.0 Beta 1</text>
+    <text class="version">智慧林业 · 0.3.0 Beta 2</text>
   </view>
 </template>
 <style scoped>

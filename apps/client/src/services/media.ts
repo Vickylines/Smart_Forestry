@@ -35,7 +35,6 @@ export async function persistPhoto(draft: DraftPhoto): Promise<Photo> {
   const blob = await response.blob();
   if (!blob.size || blob.size > 20 * 1024 * 1024) throw new Error('照片为空或超过20MB');
   await writeBlob(id, blob);
-  (window as any).ForestAndroidPreview?.releaseCapture?.();
   return { id, uri: 'idb:' + id, name: draft.name, bytes: blob.size };
   // #endif
   // #ifndef H5

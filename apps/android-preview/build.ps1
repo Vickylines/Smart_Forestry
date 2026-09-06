@@ -44,12 +44,16 @@ foreach ($directory in @($classesPath, $dexPath, $wwwPath, $outputPath, $private
 foreach ($sourceItem in @('res', 'src', 'AndroidManifest.xml')) { Copy-Item -LiteralPath (Join-Path $PSScriptRoot $sourceItem) -Destination $nativePath -Recurse -Force }
 if ($Inspection) {
     # An isolated package for device QA. Never enable debugging in the distributed APK.
+    Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'tests/BaiduRegression.java') -Destination (Join-Path $nativePath 'src/BaiduRegression.java')
     $inspectionSources = @(Get-ChildItem -LiteralPath (Join-Path $nativePath 'src') -Filter '*.java' -Recurse)
     $inspectionSources += Get-Item -LiteralPath (Join-Path $nativePath 'AndroidManifest.xml')
     foreach ($source in $inspectionSources) {
         $body = [IO.File]::ReadAllText($source.FullName).Replace('cn.zhihuilinye.preview', 'cn.zhihuilinye.preview.qa').Replace('android:debuggable="false"', 'android:debuggable="true"').Replace('android:label="智慧林业"', 'android:label="智慧林业 QA"')
         [IO.File]::WriteAllText($source.FullName, $body, [Text.UTF8Encoding]::new($false))
     }
+    $inspectionManifest = Join-Path $nativePath 'AndroidManifest.xml'
+    $inspectionBody = [IO.File]::ReadAllText($inspectionManifest).Replace('</manifest>', '<instrumentation android:name="cn.zhihuilinye.preview.qa.BaiduRegression" android:targetPackage="cn.zhihuilinye.preview.qa" /></manifest>')
+    [IO.File]::WriteAllText($inspectionManifest, $inspectionBody, [Text.UTF8Encoding]::new($false))
 }
 $h5Path = Join-Path $clientPath 'dist/build/h5'
 Get-ChildItem -LiteralPath $h5Path | Copy-Item -Destination $wwwPath -Recurse -Force
@@ -58,7 +62,7 @@ $baseApk = Join-Path $buildPath 'base.apk'
 $classesJar = Join-Path $buildPath 'classes.jar'
 $alignedApk = Join-Path $buildPath 'aligned.apk'
 $signedApk = Join-Path $buildPath 'signed.apk'
-$version = '0.3.0-beta.1'
+$version = '0.3.0-beta.2'
 $suffix = if ($Inspection) { '-inspection' } else { '' }
 $finalApk = Join-Path $outputPath ('zhihuilinye-' + $version + $suffix + '.apk')
 

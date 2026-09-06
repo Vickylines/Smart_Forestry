@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {emptyState, removeExamples, deleteProject, makeProject, addBatch, saveReview, projectStats, exportProjectCsv} from '../src/domain/forest.ts';
+import {emptyState, removeExamples, deleteProject, makeProject, addBatch, saveReview, projectStats, exportProjectCsv, updateCaptureDraft, captureDraft, saveCaptureDraft} from '../src/domain/forest.ts';
 import {serviceUrl,parseRecognition,applyPhotoResult,migrateTasks} from '../src/domain/recognition.ts';
 import {makeZip} from '../src/domain/zip.ts';
 import {createRequire} from 'node:module';
@@ -128,4 +128,26 @@ test('删除项目同时移除关联记录与任务，保留其他项目，拒�
   assert.equal(deleted.observations.length,1);assert.equal(deleted.observations[0].photos[0].id,'b');
   assert.equal(deleted.jobs.length,1);assert.equal(deleted.jobs[0].projectId,second);
   assert.deepEqual(state,original);assert.throws(()=>deleteProject(state,'missing'),/不存在/);
+});
+
+test('采集草稿转观察在同一次提交中完成，保留分组与备注且不会重复创建',()=>{
+  let state=project();const id=state.projects[0].id;
+  state=updateCaptureDraft(state,id,{photos:[{...photo('a'),sourceUri:'native:a'},photo('b')],samePlant:true,note:'未提交备注'});
+  const before=structuredClone(state);
+  const saved=saveCaptureDraft(state,id);
+  assert.equal(saved.observations.length,1);assert.equal(saved.observations[0].photos.length,2);
+  assert.equal(saved.observations[0].note,'未提交备注');assert.equal(saved.drafts.length,0);
+  assert.equal('sourceUri' in saved.observations[0].photos[0],false);
+  assert.throws(()=>saveCaptureDraft(saved,id),/选择照片/);
+  assert.deepEqual(state,before);assert.equal(captureDraft(state,id).photos.length,2);
+});
+
+test('删除项目清理其采集草稿，并保留其他项目的草稿',()=>{
+  let state=project();const first=state.projects[0].id;
+  state=updateCaptureDraft(state,first,{photos:[photo('a')]});
+  state=makeProject(state,'另一项目','');const second=state.projects[0].id;
+  state=updateCaptureDraft(state,second,{photos:[photo('b')]});
+  const deleted=deleteProject(state,first);
+  assert.equal(deleted.drafts.length,1);assert.equal(deleted.drafts[0].projectId,second);
+  assert.throws(()=>updateCaptureDraft(deleted,first,{note:'late callback'}),/不存在/);
 });

@@ -1,6 +1,6 @@
 {
   "name": "forest-observer-app",
-  "version": "0.3.0-beta.1",
+  "version": "0.3.0-beta.2",
   "private": true,
   "description": "城市绿地植物调查跨平台 App",
   "engines": {
@@ -16,7 +16,8 @@
     "test": "node --experimental-strip-types --test tests/domain.test.mjs",
     "test:browser": "node tests/browser.mjs",
     "generate:icons": "node scripts/generate-icons.mjs",
-    "test:integration": "node tests/android-features.mjs"
+    "test:integration": "node tests/android-features.mjs",
+    "test:regressions": "node tests/bug-regressions.mjs"
   },
   "dependencies": {
     "@dcloudio/uni-app": "3.0.0-5020420260813003",

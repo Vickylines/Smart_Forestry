@@ -17,7 +17,9 @@ export function requestBaidu(image=''):Promise<any>{
   const id='req-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2);
   const cleanup=()=>{clearTimeout(timer);window.removeEventListener('forest-baidu-result',handler);};
   const handler=(e:Event)=>{const d=(e as CustomEvent).detail;if(d.id!==id)return;cleanup();if(d.error)reject(new Error(d.error));else resolve(d.result);};
-  const timer=setTimeout(()=>{cleanup();reject(new Error('百度响应超时，请稍后重试'));},65000);
-  window.addEventListener('forest-baidu-result',handler);native.requestBaidu(id,image);
+  // A cold request can perform both OAuth and recognition (40 s each).
+  const timer=setTimeout(()=>{cleanup();reject(new Error('百度响应超时，请稍后重试'));},90000);
+  window.addEventListener('forest-baidu-result',handler);
+  try { native.requestBaidu(id,image); } catch(error) { cleanup();reject(error); }
  });
 }

@@ -15,7 +15,10 @@ export interface Job {
   id: string; projectId: string; observationIds: string[]; createdAt: string;
   status: 'queued' | 'running' | 'paused' | 'failed' | 'completed'; processed: number; engine: 'demo' | 'service'; error?: string;
 }
-export interface ForestState { schemaVersion: 1; projects: Project[]; observations: Observation[]; jobs: Job[]; }
+export interface CaptureDraft {
+  projectId: string; photos: Array<Photo & { sourceUri?: string }>; samePlant: boolean; note: string;
+}
+export interface ForestState { schemaVersion: 1; projects: Project[]; observations: Observation[]; jobs: Job[]; drafts?: CaptureDraft[]; }
 
 export function uid(prefix: string): string { return prefix + '-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 9); }
 export function emptyState(): ForestState { return { schemaVersion: 1, projects: [], observations: [], jobs: [] }; }
@@ -34,7 +37,23 @@ export function deleteProject(state: ForestState, projectId: string, activeJobId
   if (state.jobs.some(j => j.projectId === projectId && (j.id === activeJobId || j.status === 'running')))
     throw new Error('请等待当前识别结束或暂停后再删除');
   return { ...state, projects: state.projects.filter(p => p.id !== projectId),
-    observations: state.observations.filter(o => o.projectId !== projectId), jobs: state.jobs.filter(j => j.projectId !== projectId) };
+    observations: state.observations.filter(o => o.projectId !== projectId), jobs: state.jobs.filter(j => j.projectId !== projectId),
+    ...(state.drafts ? { drafts: state.drafts.filter(d => d.projectId !== projectId) } : {}) };
+}
+export function captureDraft(state: ForestState, projectId: string): CaptureDraft {
+  return state.drafts?.find(d => d.projectId === projectId) || { projectId, photos: [], samePlant: false, note: '' };
+}
+export function updateCaptureDraft(state: ForestState, projectId: string, update: Partial<Omit<CaptureDraft, 'projectId'>>): ForestState {
+  if (!state.projects.some(p => p.id === projectId)) throw new Error('调查项目不存在');
+  const draft = { ...captureDraft(state, projectId), ...update };
+  if (draft.photos.length > 9) throw new Error('每次最多9张照片');
+  return { ...state, drafts: [...(state.drafts || []).filter(d => d.projectId !== projectId), draft] };
+}
+export function saveCaptureDraft(state: ForestState, projectId: string): ForestState {
+  const draft = captureDraft(state, projectId);
+  const photos = draft.photos.map(({ id, uri, name, bytes }) => ({ id, uri, name, bytes }));
+  return { ...addBatch(state, projectId, photos, draft.samePlant, false, draft.note),
+    drafts: (state.drafts || []).filter(d => d.projectId !== projectId) };
 }
 export function projectStats(state: ForestState, projectId?: string) {
   const items = state.observations.filter(item => !projectId || item.projectId === projectId);
