@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="forest_background">#EAF2EC</color>
+    <style name="AppTheme" parent="android:style/Theme.Material.Light.NoActionBar">
+        <item name="android:fontFamily">sans</item>
+        <item name="android:colorAccent">#236447</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:windowLightNavigationBar">true</item>
+        <item name="android:statusBarColor">#F5F6F7</item>
+        <item name="android:navigationBarColor">#F5F6F7</item>
+        <item name="android:windowBackground">#F5F6F7</item>
+        <item name="android:windowActionModeOverlay">true</item>
+        <item name="android:enforceNavigationBarContrast">false</item>
+    </style>
+</resources>

@@ -1,0 +1,84 @@
+{
+  "pages": [
+    {
+      "path": "pages/projects/index",
+      "style": {
+        "navigationBarTitleText": "智慧林业",
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/project/index",
+      "style": {
+        "navigationBarTitleText": "调查项目"
+      }
+    },
+    {
+      "path": "pages/capture/index",
+      "style": {
+        "navigationBarTitleText": "添加观察"
+      }
+    },
+    {
+      "path": "pages/observation/index",
+      "style": {
+        "navigationBarTitleText": "观察记录"
+      }
+    },
+    {
+      "path": "pages/tasks/index",
+      "style": {
+        "navigationBarTitleText": "批量任务",
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/settings/index",
+      "style": {
+        "navigationBarTitleText": "设置",
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/library/index",
+      "style": {
+        "navigationBarTitleText": "本机资料"
+      }
+    }
+  ],
+  "globalStyle": {
+    "navigationBarTextStyle": "black",
+    "navigationBarBackgroundColor": "#f5f6f7",
+    "backgroundColor": "#f5f6f7",
+    "backgroundTextStyle": "dark"
+  },
+  "tabBar": {
+    "color": "#626e67",
+    "selectedColor": "#236447",
+    "backgroundColor": "#ffffff",
+    "borderStyle": "white",
+    "fontSize": "11px",
+    "height": "56px",
+    "iconWidth": "24px",
+    "list": [
+      {
+        "pagePath": "pages/projects/index",
+        "text": "调查",
+        "iconPath": "static/icons/tab-projects.png",
+        "selectedIconPath": "static/icons/tab-projects-active.png"
+      },
+      {
+        "pagePath": "pages/tasks/index",
+        "text": "任务",
+        "iconPath": "static/icons/tab-tasks.png",
+        "selectedIconPath": "static/icons/tab-tasks-active.png"
+      },
+      {
+        "pagePath": "pages/settings/index",
+        "text": "设置",
+        "iconPath": "static/icons/tab-settings.png",
+        "selectedIconPath": "static/icons/tab-settings-active.png"
+      }
+    ]
+  }
+}

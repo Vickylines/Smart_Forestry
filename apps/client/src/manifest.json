@@ -1,0 +1,36 @@
+{
+  "name": "智慧林业",
+  "appid": "",
+  "description": "城市绿地植物调查与批量识别",
+  "versionName": "0.2.0",
+  "versionCode": "20",
+  "transformPx": false,
+  "vueVersion": "3",
+  "uniStatistics": { "enable": false },
+  "h5": { "title": "智慧林业 · 植物调查", "router": { "mode": "hash" } },
+  "app-plus": {
+    "usingComponents": true,
+    "nvueStyleCompiler": "uni-app",
+    "compilerVersion": 3,
+    "modules": { "Camera": {} },
+    "distribute": {
+      "android": {
+        "permissions": [
+          "<uses-permission android:name=\"android.permission.INTERNET\"/>",
+          "<uses-permission android:name=\"android.permission.CAMERA\"/>"
+        ]
+      },
+      "ios": {
+        "privacyDescription": {
+          "NSCameraUsageDescription": "用于拍摄植物观察照片",
+          "NSPhotoLibraryUsageDescription": "用于选择你要加入调查的植物照片"
+        }
+      }
+    }
+  },
+  "mp-weixin": {
+    "appid": "",
+    "usingComponents": true,
+    "setting": { "urlCheck": true }
+  }
+}
