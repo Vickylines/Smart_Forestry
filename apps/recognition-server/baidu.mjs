@@ -14,7 +14,9 @@ export function mapBaidu(data){
   if(!Array.isArray(data?.result))throw new ApiError(502,'PROVIDER_FORMAT','百度未返回有效识别结果');
   const candidates=data.result.slice(0,5).map(c=>{
     if(typeof c.name!=='string'||!c.name.trim()||typeof c.score!=='number'||!Number.isFinite(c.score)||c.score<0||c.score>1)throw new ApiError(502,'PROVIDER_FORMAT','百度候选结果格式异常');
-    return {name:c.name.slice(0,100),scientificName:'',score:c.score};
+    const candidate={name:c.name.slice(0,100),scientificName:'',score:c.score};
+    if(c.baike_info && typeof c.baike_info.description==='string')candidate.baikeInfo={description:c.baike_info.description.slice(0,2000),baike_url:typeof c.baike_info.baike_url==='string'?c.baike_info.baike_url.slice(0,1000):''};
+    return candidate;
   });
   return {provider:'baidu-plant',candidates};
 }
@@ -51,7 +53,7 @@ export class BaiduPlant {
     const token=bearer?null:await this.token();
     const wait=this.nextCall-Date.now();if(wait>0)await new Promise(r=>setTimeout(r,wait));
     this.nextCall=Date.now()+this.intervalMs;
-    const data=await this.post(bearer?PLANT:PLANT+'?access_token='+encodeURIComponent(token),{image},bearer?{Authorization:'Bearer '+config.key}:{});
+    const data=await this.post(bearer?PLANT:PLANT+'?access_token='+encodeURIComponent(token),{image,baike_num:'5'},bearer?{Authorization:'Bearer '+config.key}:{});
     if([110,111].includes(Number(data?.error_code)))this.cached=null;
     return mapBaidu(data);
   }

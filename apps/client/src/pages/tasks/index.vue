@@ -35,7 +35,7 @@ function goProjects() { uni.switchTab({url:'/pages/projects/index'}); }
       <view class="row between"><text class="small muted">{{ job.processed }} / {{ job.observationIds.length }} 条观察</text><text class="small muted">{{ new Date(job.createdAt).toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'}) }}</text></view>
       <view v-if="job.engine==='service'">
         <text class="subtitle small">已识别 {{photoProgress(job).done}} / {{photoProgress(job).total}} 张照片</text>
-        <text v-if="job.error" class="error-notice">{{job.error}}</text>
+        <view v-if="job.error" class="error-notice" role="alert">{{job.error}}</view>
         <button v-if="activeJob===job.id" class="secondary wide section" @click="pauseRecognition">暂停识别</button>
         <button v-else-if="job.status!=='completed'" class="primary wide section" :disabled="!!activeJob" @click="start(job.id)" data-testid="start-recognition">{{!directConfigured?'设置密钥':job.status==='queued'?'开始识别':'继续识别'}}</button>
         </view>

@@ -19,6 +19,9 @@ test('百度令牌缓存、正确请求编码、响应映射及错误脱敏',asy
   }});
   assert.equal((await provider.recognize(image)).candidates[0].name,'测试植物');await provider.recognize(image);
   assert.equal(calls.length,3);assert.equal(calls[0].options.body.get('client_secret'),'test-secret');assert.equal(calls[1].options.body.get('image'),image);assert.ok(!calls[1].options.body.has('top_num'));
+  assert.equal(calls[1].options.body.get('baike_num'),'5');
+  const info={description:'测试植物是测试科测试属植物。',baike_url:'https://baike.baidu.com/item/test'};
+  assert.deepEqual(mapBaidu({result:[{name:'测试植物',score:.8,baike_info:info}]}).candidates[0].baikeInfo,info);
   assert.deepEqual(mapBaidu({result:[]}).candidates,[]);assert.throws(()=>mapBaidu({error_code:18,error_msg:'SECRET MUST NOT LEAK'}),e=>e.status===429&&!e.message.includes('SECRET'));
 });
 test('HTTP鉴权、CORS、逐请求持久幂等、冲突与每日上限',async()=>{

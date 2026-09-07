@@ -1,15 +1,19 @@
 export type ReviewStatus = 'pending' | 'confirmed' | 'undetermined';
 export interface Photo { id: string; uri: string; name: string; bytes: number; }
-export interface Candidate { name: string; scientificName: string; score: number; photoId?: string; }
+export interface Taxonomy { family?: string; genus?: string; }
+export interface Candidate extends Taxonomy {
+  name: string; scientificName: string; score: number; photoId?: string;
+  taxonomySource?: string; taxonomyEvidence?: string; taxonomySourceUrl?: string;
+}
 export interface PhotoRecognition { candidates: Candidate[]; provider: string; recognizedAt: string; }
 export interface Project { id: string; name: string; location: string; createdAt: string; isDemo: boolean; }
-export interface Review { at: string; decision: ReviewStatus; name: string; scientificName: string; note: string; }
+export interface Review extends Taxonomy { at: string; decision: ReviewStatus; name: string; scientificName: string; note: string; }
 export interface Observation {
   id: string; projectId: string; photos: Photo[]; createdAt: string; isDemo: boolean;
   recognitionStatus: 'pending' | 'demo_complete' | 'not_connected' | 'succeeded' | 'failed';
   recognitionPhotos?: Record<string, PhotoRecognition>; recognitionError?: string;
   reviewStatus: ReviewStatus; candidates: Candidate[]; confirmedName: string;
-  confirmedScientificName: string; note: string; revision: number; reviews: Review[];
+  confirmedScientificName: string; confirmedFamily?: string; confirmedGenus?: string; note: string; revision: number; reviews: Review[];
 }
 export interface Job {
   id: string; projectId: string; observationIds: string[]; createdAt: string;
@@ -82,7 +86,7 @@ export function addBatch(state: ForestState, projectId: string, photos: Photo[],
   const observations: Observation[] = groups.map(group => ({
     id: uid('obs'), projectId, photos: group, createdAt: at, isDemo,
     recognitionStatus: 'pending', reviewStatus: 'pending', candidates: [],
-    confirmedName: '', confirmedScientificName: '', note: note.trim().slice(0, 500), revision: 0, reviews: [],
+    confirmedName: '', confirmedScientificName: '', confirmedFamily: '', confirmedGenus: '', note: note.trim().slice(0, 500), revision: 0, reviews: [],
   }));
   const job: Job = { id: uid('job'), projectId, observationIds: observations.map(item => item.id), createdAt: at, status: 'queued', processed: 0, engine: 'service' };
   return { ...state, observations: [...observations, ...state.observations], jobs: [job, ...state.jobs] };
@@ -92,16 +96,28 @@ export function saveReview(state: ForestState, id: string, expectedRevision: num
   if (!item) throw new Error('观察记录不存在');
   if (item.revision !== expectedRevision) throw new Error('记录已更新，请重新打开后再保存');
   if (review.decision === 'confirmed' && !review.name.trim()) throw new Error('确认物种前，请填写或选择名称');
+  if ([review.family, review.genus].some(value => value != null && (typeof value !== 'string' || value.trim().length > 100))) throw new Error('科、属名称最多100个字');
   const confirmed = review.decision === 'confirmed';
-  const entry: Review = { ...review, name: confirmed ? review.name.trim() : '', scientificName: confirmed ? review.scientificName.trim() : '', note: review.note.trim(), at: new Date().toISOString() };
+  const entry: Review = { ...review, name: confirmed ? review.name.trim() : '', scientificName: confirmed ? review.scientificName.trim() : '',
+    family: confirmed ? (review.family || '').trim() : '', genus: confirmed ? (review.genus || '').trim() : '',
+    note: review.note.trim(), at: new Date().toISOString() };
   return { ...state, observations: state.observations.map(current => current.id !== id ? current : {
     ...current, reviewStatus: review.decision, confirmedName: entry.name, confirmedScientificName: entry.scientificName,
+    confirmedFamily: entry.family, confirmedGenus: entry.genus,
     note: entry.note, revision: current.revision + 1, reviews: [...current.reviews, entry],
   }) };
 }
 export function displayName(item: Observation): string {
   if (item.reviewStatus === 'undetermined') return '暂未确定';
   return item.confirmedName || item.candidates[0]?.name || '待鉴定植物';
+}
+export function observationTaxonomy(item: Observation): Taxonomy {
+  if (item.reviewStatus === 'confirmed') return { family: item.confirmedFamily || '', genus: item.confirmedGenus || '' };
+  if (item.reviewStatus === 'undetermined') return {};
+  return item.candidates[0] || {};
+}
+export function taxonomyText(value: Taxonomy): string {
+  return [value.family ? '科：' + value.family : '', value.genus ? '属：' + value.genus : ''].filter(Boolean).join(' · ');
 }
 export const reviewLabels: Record<ReviewStatus, string> = { pending: '待复核', confirmed: '已确认', undetermined: '暂未确定' };
 export function csvCell(value: unknown): string {
@@ -112,11 +128,12 @@ export function csvCell(value: unknown): string {
 export function exportProjectCsv(state: ForestState, projectId: string): string {
   const project = state.projects.find(item => item.id === projectId);
   if (!project) throw new Error('调查项目不存在');
-  const rows: unknown[][] = [['项目', '观察编号', '记录时间', '数据类型', '照片数', '复核状态', '确认名称', '确认学名', '候选名称', '备注']];
+  const rows: unknown[][] = [['项目', '观察编号', '记录时间', '数据类型', '照片数', '复核状态', '确认名称', '确认学名', '候选名称', '备注', '确认科', '确认属', '候选科属']];
   state.observations.filter(item => item.projectId === projectId).forEach(item => rows.push([
     project.name, item.id, item.createdAt, item.isDemo ? '示例数据' : '用户照片', item.photos.length,
     reviewLabels[item.reviewStatus], item.confirmedName, item.confirmedScientificName,
-    item.candidates.map(candidate => candidate.name).join('；'), item.note,
+    item.candidates.map(candidate => candidate.name).join('；'), item.note, item.confirmedFamily || '', item.confirmedGenus || '',
+    item.candidates.filter(candidate => candidate.family || candidate.genus).map(candidate => candidate.name + '（' + taxonomyText(candidate) + '）').join('；'),
   ]));
   return '\uFEFF' + rows.map(row => row.map(csvCell).join(',')).join('\r\n');
 }

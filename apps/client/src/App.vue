@@ -61,7 +61,7 @@ view, text, button, input, textarea { box-sizing:border-box; }
 .muted { color:var(--secondary); }
 .small { font-size:.8125rem; line-height:1.6; }
 .demo-notice { margin:20px 0; padding:14px 16px; border-radius:14px; background:#ecefec; color:#56655b; font-size:.8125rem; line-height:1.65; overflow-wrap:anywhere; }
-.error-notice { color:#a03323; background:#fff0eb; border:1px solid #efc2b4; padding:14px; border-radius:12px; margin:12px 0; font-size:.875rem; line-height:1.6; }
+.error-notice { display:block; max-width:100%; min-width:0; overflow-wrap:anywhere; white-space:normal; color:#a03323; background:#fff0eb; border:1px solid #efc2b4; padding:14px; border-radius:12px; margin:12px 0; font-size:.875rem; line-height:1.6; }
 .card { background:var(--surface); border:1px solid var(--separator); border-radius:20px; overflow:hidden; }
 .padded { padding:20px; }
 .badge { display:inline-block; flex-shrink:0; font-size:.75rem; font-weight:500; padding:4px 8px; line-height:1.5; border-radius:7px; background:#edf0ed; color:#59665e; }

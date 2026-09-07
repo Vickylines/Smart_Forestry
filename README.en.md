@@ -4,7 +4,9 @@
 
 An Android app for field plant surveys: create projects, capture photos, identify plants with Baidu, review names, and export records with original photos.
 
-**Current beta: v0.3.0-beta.2.** [Download the APK](https://github.com/Vickylines/Smart_Forestry/releases/tag/v0.3.0-beta.2).
+**Current beta: v0.3.0-beta.3.** [Download the APK](https://github.com/Vickylines/Smart_Forestry/releases/tag/v0.3.0-beta.3).
+
+This release adds family/genus suggestions, review fields and exports, and fixes unsaved credentials disappearing on backgrounding and broken multiline task errors. Default font sizes are unchanged. See the [Beta 3 verification record](docs/Beta3验收记录.md).
 
 ## Getting started
 
@@ -50,4 +52,4 @@ The distribution APK has application/WebView debugging disabled. `-Inspection` b
 - Android is the tested runtime. WeChat/app-plus resource compilation does not constitute device validation for those platforms.
 - The dependency audit still reports findings in the development compiler/server toolchain. Compatible security updates have been applied; see the [audit record](docs/Beta1验收记录.md). No development server is bundled in the APK. Do not expose the development server or use it to open untrusted projects.
 
-See the [bilingual release notes](docs/releases/v0.3.0-beta.2.md) and [validation record](docs/Beta2验收记录.md). Report issues with the app version, Android/device version, steps, and expected/actual results. Do not include keys or private photos.
+See the [bilingual release notes](docs/releases/v0.3.0-beta.3.md) and [validation record](docs/Beta3验收记录.md). Report issues with the app version, Android/device version, steps, and expected/actual results. Do not include keys or private photos.

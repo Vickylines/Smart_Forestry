@@ -101,9 +101,19 @@ final class BaiduDirect {
      if(image.length()>4*1024*1024||!image.matches("[A-Za-z0-9+/]+={0,2}"))throw new IOException("照片编码无效或过大");
      long wait=nextCall-System.currentTimeMillis();if(wait>0)Thread.sleep(wait);nextCall=System.currentTimeMillis()+600;
      String endpoint="https://aip.baidubce.com/rest/2.0/image-classify/v1/plant"+(bearer?"":"?access_token="+URLEncoder.encode(access,"UTF-8"));
-     JSONObject data=post(endpoint,"image="+URLEncoder.encode(image,"UTF-8"),bearer?key:null);
+     JSONObject data=post(endpoint,"image="+URLEncoder.encode(image,"UTF-8")+"&baike_num=5",bearer?key:null);
      JSONArray raw=data.getJSONArray("result"),candidates=new JSONArray();
-     for(int i=0;i<Math.min(5,raw.length());i++){JSONObject r=raw.getJSONObject(i);double score=r.getDouble("score");if(score<0||score>1||!Double.isFinite(score))throw new IOException("百度返回评分异常");candidates.put(new JSONObject().put("name",r.getString("name")).put("scientificName","").put("score",score));}
+     for(int i=0;i<Math.min(5,raw.length());i++){
+      JSONObject r=raw.getJSONObject(i);double score=r.getDouble("score");
+      if(score<0||score>1||!Double.isFinite(score))throw new IOException("百度返回评分异常");
+      JSONObject candidate=new JSONObject().put("name",r.getString("name")).put("scientificName","").put("score",score);
+      JSONObject info=r.optJSONObject("baike_info");
+      if(info!=null){
+       String description=info.optString("description",""),source=info.optString("baike_url","");
+       candidate.put("baikeInfo",new JSONObject().put("description",description.substring(0,Math.min(2000,description.length()))).put("baike_url",source.substring(0,Math.min(1000,source.length()))));
+      }
+      candidates.put(candidate);
+     }
      response=new JSONObject().put("provider","baidu-plant").put("candidates",candidates);
     }
    }catch(Exception e){failure=e instanceof IOException?e.getMessage():"识别连接失败，请检查网络后重试";if(failure==null||failure.contains("https:")||failure.length()>100)failure="识别连接失败或超时，请稍后重试";}

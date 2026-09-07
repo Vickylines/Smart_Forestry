@@ -4,7 +4,9 @@
 
 用于植物外业调查的 Android 应用：创建项目、拍摄照片、百度识图、人工复核，以及表格和原图导出。
 
-**当前测试版：v0.3.0-beta.2。** [下载 APK](https://github.com/Vickylines/Smart_Forestry/releases/tag/v0.3.0-beta.2)。
+**当前测试版：v0.3.0-beta.3。** [下载 APK](https://github.com/Vickylines/Smart_Forestry/releases/tag/v0.3.0-beta.3)。
+
+新增科属自动补全、人工复核与导出，修复切后台清空密钥输入及任务错误提示换行错位。默认字号保持不变，详见[Beta 3 验收记录](docs/Beta3验收记录.md)。
 
 ## 开始使用
 
@@ -50,4 +52,4 @@ npm run dev:h5
 - 已验证运行平台为 Android；微信和 app-plus 资源编译不代表对应平台已经实机验收。
 - 开发编译工具仍有依赖审计告警；已更新兼容的安全补丁，详情见[验收记录](docs/Beta1验收记录.md)。APK 不包含开发服务器。开发服务不可对公网开放，也不要用于打开不受信任的项目。
 
-详见[中英文发布说明](docs/releases/v0.3.0-beta.2.md)和[本轮验收记录](docs/Beta2验收记录.md)。反馈问题时请说明应用版本、机型与系统、复现步骤及预期／实际结果；不要附带密钥或私人照片。
+详见[中英文发布说明](docs/releases/v0.3.0-beta.3.md)和[本轮验收记录](docs/Beta3验收记录.md)。反馈问题时请说明应用版本、机型与系统、复现步骤及预期／实际结果；不要附带密钥或私人照片。

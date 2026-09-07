@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
-import { onShow, onHide } from '@dcloudio/uni-app';
+import { onShow, onUnload } from '@dcloudio/uni-app';
 import { activeJob } from '../../services/recognition';
 import { forest } from '../../data/store';
 import { projectStats } from '../../domain/forest';
@@ -13,7 +13,9 @@ const inputVersion = ref(0);
 const locked = computed(() => checking.value || !!activeJob.value);
 onShow(() => { if (directAvailable) directConfigured.value = !!(window as any).ForestAndroidPreview.baiduConfigured(); });
 function clearInputs() { baiduKey.value=''; baiduSecret.value=''; inputVersion.value++; }
-onHide(clearInputs);
+// Copying the second credential often backgrounds the app. Keep unsaved input
+// in this page's memory; only clear after saving, removing, or unloading it.
+onUnload(clearInputs);
 function storeKey() {
   if (locked.value) return;
   message.value = '';
@@ -75,7 +77,7 @@ function privacy() {
     <view class="section card settings-group">
       <button role="button" tabindex="0" class="settings-row" @click="privacy" data-testid="privacy"><text class="grow">存储与隐私</text><AppIcon name="chevron" :size="16" /></button>
     </view>
-    <text class="version">智慧林业 · 0.3.0 Beta 2</text>
+    <text class="version">智慧林业 · 0.3.0 Beta 3</text>
   </view>
 </template>
 <style scoped>

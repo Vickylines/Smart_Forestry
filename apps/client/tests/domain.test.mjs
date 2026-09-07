@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {emptyState, removeExamples, deleteProject, makeProject, addBatch, saveReview, projectStats, exportProjectCsv, updateCaptureDraft, captureDraft, saveCaptureDraft} from '../src/domain/forest.ts';
-import {serviceUrl,parseRecognition,applyPhotoResult,migrateTasks} from '../src/domain/recognition.ts';
+import {emptyState, removeExamples, deleteProject, makeProject, addBatch, saveReview, projectStats, exportProjectCsv, updateCaptureDraft, captureDraft, saveCaptureDraft, observationTaxonomy} from '../src/domain/forest.ts';
+import {serviceUrl,parseRecognition,applyPhotoResult,migrateTasks,baiduTaxonomy} from '../src/domain/recognition.ts';
 import {makeZip} from '../src/domain/zip.ts';
 import {createRequire} from 'node:module';
 const Zip=createRequire(import.meta.url)('adm-zip');
@@ -54,6 +54,38 @@ test('服务配置与返回值严格校验，空候选是有效结果',()=>{
   assert.throws(()=>parseRecognition({provider:'test',candidates:[{name:'',score:.8}]}));
   assert.deepEqual(parseRecognition({provider:'test',candidates:[]}).candidates,[]);
   assert.deepEqual(parseRecognition({provider:'baidu-plant',candidates:[{name:'非植物',score:.8}]}).candidates,[]);
+});
+test('科属仅从对应百科条目的明确分类提取，保留来源并拒绝歧义',()=>{
+  const info={description:'测试植物（学名：Example test），为测试科测试属多年生植物。生于测试环境。',baike_url:'http://baike.baidu.com/item/test'};
+  const candidate=parseRecognition({provider:'baidu-plant',candidates:[{name:'测试植物',score:.8,baikeInfo:info}]}).candidates[0];
+  assert.equal(candidate.family,'测试科');assert.equal(candidate.genus,'测试属');
+  assert.equal(candidate.taxonomySource,'百度百科摘要');assert.ok(candidate.taxonomyEvidence.includes('为测试科测试属'));
+  assert.equal(candidate.taxonomySourceUrl,'https://baike.baidu.com/item/test');
+  assert.equal(baiduTaxonomy('测试植物',{description:'测试植物是测试科多年生植物。'}).family,'测试科');
+  assert.equal(baiduTaxonomy('测试植物',{description:'测试植物，测试科、测试属植物。'}).genus,'测试属');
+  for(const description of ['测试植物的花叶可供观察。','别的植物是测试科测试属植物。','测试植物的近亲是测试科测试属植物。','测试植物原属测试科测试属。','测试植物原为测试科测试属。','测试植物不是测试科测试属植物。','测试植物是测试科或另一科植物。','测试植物为测试科测试属。分类也记为另一科另一属。','测试植物为测试科测试亚科测试属。','测试植物与测试科测试属的其他植物相似。','测试植物是同属中的植物。','测试植物是金属富集植物。','测试植物为一种测试科植物。']){
+    assert.deepEqual(baiduTaxonomy('测试植物',{description}),{},description);
+  }
+  assert.equal(baiduTaxonomy('测试植物',{...info,baike_url:'javascript:alert(1)'}).taxonomySourceUrl,'');
+  assert.equal(parseRecognition({provider:'other',candidates:[{name:'测试植物',score:.8,baikeInfo:info}]}).candidates[0].family,'');
+  for(const field of [123,{},'科'.repeat(101)])assert.throws(()=>parseRecognition({provider:'test',candidates:[{name:'测试植物',score:.8,family:field}]}),/科属/);
+});
+test('科属保存与历史、CSV兼容旧记录，清空后不回填候选或覆盖人工决定',()=>{
+  let state=project();state=addBatch(state,state.projects[0].id,[photo('a'),photo('b')],true);
+  const item=state.observations[0],job=state.jobs[0];delete item.confirmedFamily;delete item.confirmedGenus;
+  assert.deepEqual(observationTaxonomy(item),{});
+  state=applyPhotoResult(state,job.id,item.id,'a',parseRecognition({provider:'test',candidates:[{name:'测试候选',family:'候选科',genus:'候选属',score:.8}]}));
+  assert.equal(observationTaxonomy(state.observations[0]).family,'候选科');
+  state=saveReview(state,item.id,0,{decision:'confirmed',name:'人工结果',scientificName:'',family:' 人工科 ',genus:' 人工属 ',note:''});
+  state=applyPhotoResult(state,job.id,item.id,'b',parseRecognition({provider:'test',candidates:[{name:'更高候选',family:'新科',genus:'新属',score:.9}]}));
+  assert.deepEqual(observationTaxonomy(state.observations[0]),{family:'人工科',genus:'人工属'});
+  assert.equal(state.observations[0].reviews[0].family,'人工科');
+  const csv=exportProjectCsv(state,state.projects[0].id);assert.ok(csv.includes('"确认科","确认属","候选科属"'));assert.ok(csv.includes('"人工科","人工属"'));
+  state=saveReview(state,item.id,1,{decision:'confirmed',name:'人工结果',scientificName:'',family:'',genus:'',note:''});
+  assert.deepEqual(observationTaxonomy(state.observations[0]),{family:'',genus:''});
+  state=saveReview(state,item.id,2,{decision:'undetermined',name:'',scientificName:'',family:'不保留科',genus:'不保留属',note:''});
+  assert.deepEqual(observationTaxonomy(state.observations[0]),{});assert.equal(state.observations[0].confirmedFamily,'');
+  assert.equal(state.observations[0].reviews[0].genus,'人工属');
 });
 test('旧用户任务迁移，运行中重启后暂停并保留已完成照片',()=>{
   let state=project();state=addBatch(state,state.projects[0].id,[photo('a')],false,false);

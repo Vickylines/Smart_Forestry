@@ -1,6 +1,6 @@
 {
   "name": "forest-observer-app",
-  "version": "0.3.0-beta.2",
+  "version": "0.3.0-beta.3",
   "private": true,
   "description": "城市绿地植物调查跨平台 App",
   "engines": {

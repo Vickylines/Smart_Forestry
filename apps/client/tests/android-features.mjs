@@ -20,7 +20,7 @@ await context.addInitScript(()=>{
         let hash=0;for(let i=0;i<image.length;i++)hash=(hash*31+image.charCodeAt(i))>>>0;
         calls.push(hash);localStorage.setItem('qa-calls',JSON.stringify(calls));
         if(calls.length===2)error='模拟网络中断';
-        else result={provider:'TEST FIXTURE ONLY',candidates:calls.length===1?[{name:'测试候选',scientificName:'',score:.83},{name:'另一候选',scientificName:'',score:.41}]:[]};
+        else result={provider:'baidu-plant',candidates:calls.length===1?[{name:'测试候选',scientificName:'',score:.83,baikeInfo:{description:'测试候选是测试科测试属的植物。',baike_url:'https://baike.baidu.com/item/test'}},{name:'另一候选',scientificName:'',score:.41}]:[]};
       }
       setTimeout(()=>window.dispatchEvent(new CustomEvent('forest-baidu-result',{detail:{id,result,error}})),100);
     }
@@ -30,6 +30,10 @@ const page=await context.newPage(),errors=[];
 page.on('pageerror',e=>errors.push(e.message));
 const byId=id=>page.locator('[data-testid="'+id+'"]');
 const field=id=>byId(id).locator('input');
+const fieldValue=async(id,value)=>{
+  await page.waitForFunction(({id,value})=>document.querySelector('[data-testid="'+id+'"] input')?.value===value,{id,value});
+  assert.equal(await field(id).inputValue(),value);
+};
 const state=()=>page.evaluate(()=>{const raw=JSON.parse(localStorage.getItem('forest-observer:state:v1'));const value=raw.data??raw;return typeof value==='string'?JSON.parse(value):value;});
 try{
   await page.goto(base);await page.locator('uni-tabbar').getByText('任务',{exact:true}).click();
@@ -49,7 +53,7 @@ try{
   let s=await state();assert.equal(s.observations.length,1);assert.equal(s.observations[0].photos.length,2);assert.deepEqual(s.observations[0].candidates,[]);
   await context.setOffline(false);await page.reload();await byId('job-open-project').click();
   await page.locator('[data-testid^="observation-obs-"]').click();await page.locator('.detail-photo .photo-image').waitFor();
-  await field('review-name').fill('人工确认名称');await byId('save-review').click();
+  await field('review-name').fill('人工确认名称');await field('review-family').fill('人工科');await field('review-genus').fill('人工属');await byId('save-review').click();
   await page.goto(projectUrl);await byId('export-package').waitFor();
   const ready=page.waitForEvent('download');await byId('export-package').click();
   const chunks=[];for await(const c of await (await ready).createReadStream())chunks.push(c);
@@ -57,6 +61,8 @@ try{
   const manifest=JSON.parse(zip.readAsText('project.json'));
   assert.equal(manifest.observations.length,1);assert.deepEqual(zip.readFile(manifest.observations[0].photos[0].uri),image1);assert.deepEqual(zip.readFile(manifest.observations[0].photos[1].uri),image2);
   assert.ok(zip.readAsText('观察记录.csv').includes('人工确认名称'));
+  assert.ok(zip.readAsText('观察记录.csv').includes('"人工科","人工属"'));
+  assert.equal(manifest.observations[0].confirmedFamily,'人工科');assert.equal(manifest.observations[0].reviews[0].genus,'人工属');
   await writeFile(output+'export-test.zip',bytes);
   await page.goto(base+'#/pages/settings/index');await field('baidu-key').waitFor();
   assert.equal(await byId('baidu-test').getAttribute('tabindex'),'-1');
@@ -70,19 +76,34 @@ try{
   s=await state();assert.equal(Object.keys(s.observations[0].recognitionPhotos).length,1);
   await page.reload();await byId('start-recognition').click();await page.getByText('开始识别',{exact:true}).last().click();
   await page.getByText('已完成',{exact:true}).waitFor();
-  s=await state();assert.equal(s.observations[0].confirmedName,'人工确认名称');assert.equal(s.observations[0].recognitionStatus,'succeeded');assert.equal(s.observations[0].reviews.length,1);
+  s=await state();assert.equal(s.observations[0].confirmedName,'人工确认名称');assert.equal(s.observations[0].confirmedFamily,'人工科');assert.equal(s.observations[0].recognitionStatus,'succeeded');assert.equal(s.observations[0].reviews.length,1);
   const calls=await page.evaluate(()=>JSON.parse(localStorage.getItem('qa-calls')));
   assert.equal(calls.length,3);assert.notEqual(calls[0],calls[1]);assert.equal(calls[1],calls[2]);
   await byId('job-open-project').click();await page.locator('[data-testid^="observation-obs-"]').click();
   await page.locator('.candidate').first().waitFor();assert.equal(await page.locator('.candidate').count(),2);
+  await fieldValue('review-family','人工科');
+  await page.locator('.candidate').first().click();await fieldValue('review-family','测试科');await fieldValue('review-genus','测试属');
+  assert.equal(await byId('candidate-taxonomy').first().innerText(),'科：测试科 · 属：测试属');
   await page.locator('.candidate').nth(1).click();await page.waitForFunction(()=>document.querySelector('[data-testid="review-name"] input')?.value==='另一候选');assert.equal(await field('review-name').inputValue(),'另一候选');
+  await fieldValue('review-family','');await fieldValue('review-genus','');
+  await page.locator('.candidate').first().click();await fieldValue('review-family','测试科');await field('review-family').fill('修订科');await field('review-genus').fill('');await byId('save-review').click();
+  await page.reload();await field('review-family').waitFor();await page.waitForFunction(()=>document.querySelector('[data-testid="review-family"] input')?.value==='修订科');
+  assert.equal(await field('review-genus').inputValue(),'','An intentionally empty confirmed genus must not be repopulated from the candidate');
+  await page.screenshot({path:output+'taxonomy-review.png',fullPage:true});
+  await page.goto(projectUrl);await field('search-records').fill('修订科');assert.equal(await page.locator('[data-testid^="observation-obs-"]').count(),1);
+  const taxonomyDownload=page.waitForEvent('download');await byId('export-package').click();
+  const taxonomyChunks=[];for await(const c of await (await taxonomyDownload).createReadStream())taxonomyChunks.push(c);
+  const taxonomyZip=new Zip(Buffer.concat(taxonomyChunks)),taxonomyManifest=JSON.parse(taxonomyZip.readAsText('project.json'));
+  assert.ok(taxonomyZip.readAsText('观察记录.csv').includes('"修订科",""'));
+  assert.equal(taxonomyManifest.observations[0].candidates[0].taxonomySource,'百度百科摘要');
+  assert.equal(taxonomyManifest.observations[0].reviews[1].family,'修订科');
   await page.goto(base+'#/pages/settings/index');await byId('baidu-remove').click();await page.getByText('取消',{exact:true}).last().click();
   assert.equal(await byId('key-status').innerText(),'已保存');
   await byId('baidu-remove').click();await page.getByText('移除',{exact:true}).last().click();await byId('key-status').getByText('未设置',{exact:true}).waitFor();
   assert.equal((await state()).observations.length,1);
   await page.reload();await byId('key-status').getByText('未设置',{exact:true}).waitFor();
   assert.deepEqual(errors,[]);
-  await writeFile(output+'report.json',JSON.stringify({passed:true,provider:'mock native bridge, no live Baidu requests',checks:['offline multi-photo grouping','original bytes in ZIP','credential UI validation/save/verify/remove/cancel','partial failure & resume skips completed photos','manual reviews preserved','duplicate empty scientific names selectable'],requests:calls.length,errors},null,2));
+  await writeFile(output+'report.json',JSON.stringify({passed:true,provider:'mock native bridge, no live Baidu requests',checks:['offline multi-photo grouping','original bytes in ZIP','credential UI validation/save/verify/remove/cancel','partial failure & resume skips completed photos','manual reviews preserved','duplicate empty scientific names selectable','taxonomy autofill, candidate switching, edits and explicit clearing survive reload','taxonomy, source and review history in ZIP / CSV','project search by family'],requests:calls.length,errors},null,2));
   console.log('Baidu bridge integration passed (mock responses; no provider quota used).');
 }catch(e){await page.screenshot({path:output+'failure.png',fullPage:true});console.log(JSON.stringify({body:await page.locator('body').innerText(),errors}));throw e;}
 finally{await browser.close();}

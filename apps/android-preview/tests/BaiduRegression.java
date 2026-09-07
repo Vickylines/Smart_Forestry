@@ -18,6 +18,7 @@ public final class BaiduRegression extends Instrumentation {
     private static volatile int tokenCalls;
     private static volatile boolean rejectCredentials;
     private static volatile boolean queryLeaked;
+    private static volatile boolean baikeRequested;
     private final LinkedBlockingQueue<String> replies = new LinkedBlockingQueue<>();
     private BaiduDirect direct;
     private WebView web;
@@ -47,12 +48,14 @@ public final class BaiduRegression extends Instrumentation {
             rejectCredentials = false;
             require(request("retry", "").isNull("error"), "Failed validation prevented retry");
             require(tokenCalls == 3, "Retry did not refresh authentication");
-            require(request("photo", "YWJj").getJSONObject("result").getJSONArray("candidates").length() == 1, "Photo result unavailable");
+            JSONObject photo = request("photo", "YWJj").getJSONObject("result").getJSONArray("candidates").getJSONObject(0);
+            require(photo.getJSONObject("baikeInfo").getString("description").contains("测试科测试属"), "Taxonomy evidence was dropped");
+            require(baikeRequested, "Recognition must request optional encyclopedia information");
             require(tokenCalls == 3, "Normal photos should reuse a valid token");
             require(!queryLeaked, "OAuth credentials appeared in the URL query");
             require(direct.save("", ""), "Request lock was not released after response");
             require(!direct.configured(), "Credentials were not removed");
-            result.putString("stream", "PASS: fresh verification, revoked-key rejection, retry, recognition token cache, POST credentials, removal. Mock HTTPS only.\n");
+            result.putString("stream", "PASS: fresh verification, revoked-key rejection, retry, recognition token cache, POST credentials, taxonomy evidence, removal. Mock HTTPS only.\n");
             finish(-1, result);
         } catch (Throwable error) {
             result.putString("stream", "FAIL: " + error.getMessage() + "\n");
@@ -74,8 +77,9 @@ public final class BaiduRegression extends Instrumentation {
     private static void require(boolean condition, String message) { if (!condition) throw new AssertionError(message); }
     private static final class FakeConnection extends HttpsURLConnection {
         private final boolean oauth;
+        private final ByteArrayOutputStream requestBody = new ByteArrayOutputStream();
         FakeConnection(URL url) { super(url); oauth = url.getPath().contains("/oauth/"); }
-        @Override public OutputStream getOutputStream() { return new ByteArrayOutputStream(); }
+        @Override public OutputStream getOutputStream() { return requestBody; }
         @Override public int getResponseCode() { return 200; }
         @Override public InputStream getInputStream() {
             String body;
@@ -83,7 +87,10 @@ public final class BaiduRegression extends Instrumentation {
                 tokenCalls++;
                 queryLeaked |= url.getQuery() != null;
                 body = rejectCredentials ? "{\"error\":\"invalid_client\",\"error_description\":\"unknown client id\"}" : "{\"access_token\":\"QA-ONLY-TOKEN\",\"expires_in\":3600}";
-            } else body = "{\"result\":[{\"name\":\"测试植物\",\"score\":0.8}]}";
+            } else {
+                baikeRequested |= new String(requestBody.toByteArray(), StandardCharsets.UTF_8).contains("baike_num=5");
+                body = "{\"result\":[{\"name\":\"测试植物\",\"score\":0.8,\"baike_info\":{\"description\":\"测试植物是测试科测试属植物。\",\"baike_url\":\"https://baike.baidu.com/item/test\"}}]}";
+            }
             return new ByteArrayInputStream(body.getBytes(StandardCharsets.UTF_8));
         }
         @Override public void connect() {}

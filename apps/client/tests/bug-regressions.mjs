@@ -11,6 +11,7 @@ const project={id:'project-regression',name:'故障恢复调查',location:'',cre
 const seed={schemaVersion:1,projects:[project],observations:[],jobs:[]};
 const results=[];
 async function check(name,body){
+  if(process.env.TEST_FILTER && !new RegExp(process.env.TEST_FILTER).test(name))return;
   const context=await browser.newContext({viewport:{width:390,height:844}});
   const page=await context.newPage();
   const errors=[];page.on('pageerror',error=>errors.push(error.message));
@@ -20,6 +21,58 @@ async function check(name,body){
 }
 const state=page=>page.evaluate(()=>JSON.parse(localStorage.getItem('forest-observer:state:v1')));
 const byId=(page,id)=>page.locator('[data-testid="'+id+'"]');
+
+await check('credential-draft-background',async(context,page)=>{
+  await context.addInitScript(()=>{
+    window.ForestAndroidPreview={baiduConfigured:()=>false,requestBaidu:()=>{},saveBaidu:()=>!window.qaSaveFailure};
+  });
+  await page.goto(base+'#/pages/settings/index');
+  const key=byId(page,'baidu-key').locator('input'),secret=byId(page,'baidu-secret').locator('input');
+  const background=()=>page.evaluate(async()=>{
+    Object.defineProperty(document,'visibilityState',{configurable:true,value:'hidden'});
+    document.dispatchEvent(new Event('visibilitychange'));
+    await new Promise(resolve=>requestAnimationFrame(resolve));
+    Object.defineProperty(document,'visibilityState',{configurable:true,value:'visible'});
+    document.dispatchEvent(new Event('visibilitychange'));
+  });
+  await key.fill('QA-ONLY-API-KEY-DRAFT');await background();
+  assert.equal(await key.inputValue(),'QA-ONLY-API-KEY-DRAFT','Switching out to copy the secret must retain the API key');
+  await secret.fill('QA-ONLY-SECRET-KEY-DRAFT');await background();
+  assert.equal(await secret.inputValue(),'QA-ONLY-SECRET-KEY-DRAFT');
+  await page.locator('uni-tabbar').getByText('任务',{exact:true}).click();
+  await page.locator('uni-tabbar').getByText('设置',{exact:true}).click();
+  assert.equal(await key.inputValue(),'QA-ONLY-API-KEY-DRAFT');
+  assert.equal(await secret.inputValue(),'QA-ONLY-SECRET-KEY-DRAFT');
+  assert.ok(!await page.evaluate(()=>JSON.stringify([localStorage,sessionStorage]).includes('QA-ONLY-')),'Draft credentials must stay out of web storage');
+  await page.evaluate(()=>{window.qaSaveFailure=true;});await byId(page,'baidu-save').click();
+  await page.getByText('密钥保存失败，请等待识别结束或检查设备存储',{exact:true}).waitFor();
+  assert.equal(await key.inputValue(),'QA-ONLY-API-KEY-DRAFT');
+  await page.evaluate(()=>{window.qaSaveFailure=false;});await byId(page,'baidu-save').click();
+  await page.getByText('密钥已加密保存',{exact:true}).waitFor();
+  assert.equal(await key.inputValue(),'');assert.equal(await secret.inputValue(),'');
+});
+
+await check('multiline-task-error',async(context,page)=>{
+  await context.addInitScript(data=>{
+    localStorage.setItem('forest-observer:state:v1',JSON.stringify({...data,
+      observations:[{id:'obs-error',projectId:data.projects[0].id,isDemo:false,photos:[],reviews:[],candidates:[],revision:0,reviewStatus:'pending'}],
+      jobs:[{id:'job-error',projectId:data.projects[0].id,observationIds:['obs-error'],createdAt:new Date().toISOString(),engine:'service',status:'failed',processed:0,error:'百度鉴权失败，请检查 API Key 和 Secret Key'}]}));
+  },seed);
+  await page.goto(base+'#/pages/tasks/index');await page.locator('.error-notice').waitFor();
+  for(const width of [320,390])for(const scale of [1,1.5,2]){
+    await page.setViewportSize({width,height:844});
+    await page.addStyleTag({content:`html{font-size:${scale*100}%!important}`});
+    const layout=await page.locator('.error-notice').evaluate(element=>{
+      const box=element.getBoundingClientRect(),previous=element.previousElementSibling.getBoundingClientRect(),next=element.nextElementSibling.getBoundingClientRect();
+      const range=document.createRange();range.selectNodeContents(element);
+      return {boxes:element.getClientRects().length,noOverlap:box.top>=previous.bottom&&box.bottom<=next.top,
+        textInside:[...range.getClientRects()].every(r=>r.left>=box.left&&r.right<=box.right+1&&r.top>=box.top&&r.bottom<=box.bottom+1),
+        noOverflow:document.documentElement.scrollWidth<=innerWidth};
+    });
+    assert.deepEqual(layout,{boxes:1,noOverlap:true,textInside:true,noOverflow:true},`Error box must wrap cleanly at ${width}px / ${scale*100}% type`);
+  }
+  await page.screenshot({path:output+'multiline-task-error-fixed.png',fullPage:true});
+});
 
 await check('startup-write-failure',async(context,page)=>{
   await context.addInitScript(data=>{

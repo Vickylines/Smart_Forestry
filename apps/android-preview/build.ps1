@@ -62,7 +62,7 @@ $baseApk = Join-Path $buildPath 'base.apk'
 $classesJar = Join-Path $buildPath 'classes.jar'
 $alignedApk = Join-Path $buildPath 'aligned.apk'
 $signedApk = Join-Path $buildPath 'signed.apk'
-$version = '0.3.0-beta.2'
+$version = '0.3.0-beta.3'
 $suffix = if ($Inspection) { '-inspection' } else { '' }
 $finalApk = Join-Path $outputPath ('zhihuilinye-' + $version + $suffix + '.apk')
 

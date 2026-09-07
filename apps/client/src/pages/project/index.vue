@@ -2,7 +2,7 @@
 import { computed, ref } from 'vue';
 import { onLoad } from '@dcloudio/uni-app';
 import { forest, toastError } from '../../data/store';
-import { projectStats, displayName, reviewLabels, exportProjectCsv } from '../../domain/forest';
+import { projectStats, displayName, reviewLabels, exportProjectCsv, observationTaxonomy, taxonomyText } from '../../domain/forest';
 import PhotoPreview from '../../components/PhotoPreview.vue';
 import LocalNotice from '../../components/LocalNotice.vue';
 import AppIcon from '../../components/AppIcon.vue';
@@ -21,7 +21,7 @@ const stats = computed(() => projectStats(forest.value, id.value));
 const busy = computed(() => exporting.value || deleting.value || forest.value.jobs.some(j => j.projectId===id.value && (j.id===activeJob.value || j.status==='running')));
 const records = computed(() => forest.value.observations.filter(item => item.projectId === id.value)
   .filter(item => filter.value === 'all' || item.reviewStatus === filter.value)
-  .filter(item => (displayName(item) + ' ' + item.confirmedScientificName + ' ' + item.id).toLowerCase().includes(query.value.trim().toLowerCase())));
+  .filter(item => (displayName(item) + ' ' + item.confirmedScientificName + ' ' + taxonomyText(observationTaxonomy(item)) + ' ' + item.id).toLowerCase().includes(query.value.trim().toLowerCase())));
 function capture() { uni.navigateTo({ url: '/pages/capture/index?projectId=' + encodeURIComponent(id.value) }); }
 function openObservation(observationId: string) { uni.navigateTo({ url: '/pages/observation/index?id=' + encodeURIComponent(observationId) }); }
 function goProjects() { uni.switchTab({url:'/pages/projects/index'}); }
@@ -62,7 +62,7 @@ async function exportPackage() {
       <view><text class="stat-number">{{ stats.pending }}</text><text class="stat-label">待复核</text></view>
     </view>
     <view class="row action-row"><button role="button" tabindex="0" hover-class="control-pressed" :hover-start-time="0" :hover-stay-time="60" class="primary grow" @click="capture" data-testid="add-observation">＋ 添加观察</button><button role="button" tabindex="0" hover-class="control-pressed" :hover-start-time="0" :hover-stay-time="60" class="secondary" @click="exportCsv" data-testid="export-csv">导出 CSV</button></view>
-    <view class="section"><input v-model="query" class="field search-field" placeholder="搜索名称或编号" aria-label="搜索观察记录" data-testid="search-records" /></view>
+    <view class="section"><input v-model="query" class="field search-field" placeholder="搜索名称、科属或编号" aria-label="搜索观察记录" data-testid="search-records" /></view>
     <view class="filter-row" role="group" aria-label="按复核状态筛选">
       <button role="button" tabindex="0" hover-class="control-pressed" :hover-start-time="0" :hover-stay-time="60" v-for="entry in [{key:'all',label:'全部'},{key:'pending',label:'待复核'},{key:'confirmed',label:'已确认'},{key:'undetermined',label:'暂未确定'}]" :key="entry.key" class="filter" :class="{active:filter === entry.key}" :aria-pressed="filter === entry.key" @click="filter = entry.key" :data-testid="'filter-' + entry.key">{{ entry.label }}</button>
     </view>
@@ -73,6 +73,7 @@ async function exportPackage() {
         <view class="record-info">
           <text class="record-name">{{ displayName(item) }}</text>
           <text v-if="item.confirmedScientificName || item.candidates[0]?.scientificName" class="record-latin">{{ item.confirmedScientificName || item.candidates[0]?.scientificName }}</text>
+          <text v-if="taxonomyText(observationTaxonomy(item))" class="subtitle small">{{ taxonomyText(observationTaxonomy(item)) }}</text>
           <view class="record-meta"><text class="badge" :class="'status-' + item.reviewStatus">{{ reviewLabels[item.reviewStatus] }}</text><text>{{ item.photos.length }} 张</text></view>
         </view>
         <AppIcon name="chevron" :size="16" />
