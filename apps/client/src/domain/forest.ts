@@ -4,6 +4,9 @@ export interface Taxonomy { family?: string; genus?: string; }
 export interface Candidate extends Taxonomy {
   name: string; scientificName: string; score: number; photoId?: string;
   taxonomySource?: string; taxonomyEvidence?: string; taxonomySourceUrl?: string;
+  taxonomyStatus?: 'matched' | 'genus' | 'ambiguous' | 'not-found' | 'unavailable';
+  taxonomyCheckedAt?: string; familyScientificName?: string; genusScientificName?: string;
+  taxonomyScientificName?: string;
 }
 export interface PhotoRecognition { candidates: Candidate[]; provider: string; recognizedAt: string; }
 export interface Project { id: string; name: string; location: string; createdAt: string; isDemo: boolean; }

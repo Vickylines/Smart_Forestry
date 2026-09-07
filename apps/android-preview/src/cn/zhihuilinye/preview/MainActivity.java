@@ -53,6 +53,7 @@ public final class MainActivity extends Activity {
     private volatile String captureProject = "";
     private String pendingCsv;
     private BaiduDirect baidu;
+    private TaxonomyHttp taxonomy;
     private FileExport fileExport;
 
     @Override public void onCreate(Bundle state) {
@@ -96,6 +97,7 @@ public final class MainActivity extends Activity {
         cleanOldCaptures();
         fileExport = new FileExport(this, web);
         baidu = new BaiduDirect(this, web);
+        taxonomy = new TaxonomyHttp(this, web);
         web.addJavascriptInterface(new CsvBridge(), "ForestAndroidPreview");
         web.setWebViewClient(new WebViewClient() {
             @Override public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
@@ -272,6 +274,7 @@ public final class MainActivity extends Activity {
         @JavascriptInterface public boolean saveBaidu(String key,String secret){return baidu.save(key,secret);}
         @JavascriptInterface public boolean baiduConfigured(){return baidu.configured();}
         @JavascriptInterface public void requestBaidu(String id,String image){baidu.request(id,image);}
+        @JavascriptInterface public void requestTaxonomy(String id,String operation,String query){taxonomy.request(id,operation,query);}
         @JavascriptInterface public boolean beginFile(String name,String type){return fileExport.begin(name,type);}
         @JavascriptInterface public boolean appendFile(String data){return fileExport.append(data);}
         @JavascriptInterface public void finishFile(){fileExport.finish();}
@@ -341,6 +344,7 @@ public final class MainActivity extends Activity {
     }
     @Override protected void onDestroy() {
         if (baidu != null) baidu.close();
+        if (taxonomy != null) taxonomy.close();
         if (fileExport != null) fileExport.cancel();
         if (imageCallback != null) imageCallback.onReceiveValue(null);
         if (web != null) { web.removeJavascriptInterface("ForestAndroidPreview"); web.destroy(); }

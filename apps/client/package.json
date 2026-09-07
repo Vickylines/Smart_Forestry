@@ -1,6 +1,6 @@
 {
   "name": "forest-observer-app",
-  "version": "0.3.0-beta.3",
+  "version": "0.3.0-beta.4",
   "private": true,
   "description": "城市绿地植物调查跨平台 App",
   "engines": {
@@ -13,11 +13,13 @@
     "build:mp-weixin": "uni build -p mp-weixin",
     "build:app:resources": "uni build -p app-plus",
     "type-check": "vue-tsc --noEmit",
-    "test": "node --experimental-strip-types --test tests/domain.test.mjs",
+    "test": "node --experimental-strip-types --test tests/domain.test.mjs tests/taxonomy.test.mjs",
     "test:browser": "node tests/browser.mjs",
     "generate:icons": "node scripts/generate-icons.mjs",
     "test:integration": "node tests/android-features.mjs",
-    "test:regressions": "node tests/bug-regressions.mjs"
+    "test:regressions": "node tests/bug-regressions.mjs",
+    "test:taxonomy": "node tests/taxonomy-browser.mjs",
+    "test:taxonomy:live": "node --experimental-strip-types tests/taxonomy-live.mjs"
   },
   "dependencies": {
     "@dcloudio/uni-app": "3.0.0-5020420260813003",

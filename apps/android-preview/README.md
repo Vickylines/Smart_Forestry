@@ -1,12 +1,12 @@
 **智慧林业 Android 测试包 / Android beta**
 
-本目录将客户端 H5 生产资源内置到 Android WebView，并提供相机、百度识图凭据加密和系统文件导出。当前源码构建版本为 0.3.0-beta.3，最低 Android 10，包名 cn.zhihuilinye.preview。
+本目录将客户端 H5 生产资源内置到 Android WebView，并提供相机、百度识图凭据加密和系统文件导出。当前源码构建版本为 0.3.0-beta.4，最低 Android 10，包名 cn.zhihuilinye.preview。
 
 ~~~powershell
 ./build.ps1 -JdkPath '你的JDK17目录' -SdkPath '你的AndroidSDK目录'
 ~~~
 
-构建需要 SDK platform 36、build tools 36.0.0。输出到 dist/android/zhihuilinye-0.3.0-beta.3.apk，默认关闭应用与 WebView 调试。Windows 构建使用 LOCALAPPDATA/CodexAndroidBuilds 下的 ASCII 暂存路径。
+构建需要 SDK platform 36、build tools 36.0.0。输出到 dist/android/zhihuilinye-0.3.0-beta.4.apk，默认关闭应用与 WebView 调试。Windows 构建使用 LOCALAPPDATA/CodexAndroidBuilds 下的 ASCII 暂存路径。
 
 - APK 不包含识别账号或密钥；用户在设置输入 API Key 和 Secret Key，凭据由 Android Keystore 与 AES-GCM 加密保存。
 - 相机仅通过系统授权的内容 URI 返回照片，不要求整个相册的读取权限。待拍摄信息用于进程恢复，成功保存后移除临时拍摄文件。

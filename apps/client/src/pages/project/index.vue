@@ -10,6 +10,7 @@ import { saveCsvFile } from '../../services/media';
 import { projectArchive, saveBlobFile } from '../../services/archive';
 import { removeProject } from '../../services/projects';
 import { activeJob } from '../../services/recognition';
+import { enrichProject, taxonomyProgress, stopTaxonomy } from '../../services/taxonomy';
 const exporting = ref(false);
 const deleting = ref(false);
 const id = ref('');
@@ -25,6 +26,10 @@ const records = computed(() => forest.value.observations.filter(item => item.pro
 function capture() { uni.navigateTo({ url: '/pages/capture/index?projectId=' + encodeURIComponent(id.value) }); }
 function openObservation(observationId: string) { uni.navigateTo({ url: '/pages/observation/index?id=' + encodeURIComponent(observationId) }); }
 function goProjects() { uni.switchTab({url:'/pages/projects/index'}); }
+async function fillTaxonomy() {
+  try { await enrichProject(id.value); uni.showToast({title:'补查结束，请在记录中核对结果',icon:'none'}); }
+  catch (error) { toastError(error); }
+}
 function confirmDelete() {
   if (busy.value || !project.value) return;
   const draftPhotos = (forest.value.drafts || []).filter(d => d.projectId === id.value).reduce((sum,d) => sum+d.photos.length,0);
@@ -63,6 +68,8 @@ async function exportPackage() {
     </view>
     <view class="row action-row"><button role="button" tabindex="0" hover-class="control-pressed" :hover-start-time="0" :hover-stay-time="60" class="primary grow" @click="capture" data-testid="add-observation">＋ 添加观察</button><button role="button" tabindex="0" hover-class="control-pressed" :hover-start-time="0" :hover-stay-time="60" class="secondary" @click="exportCsv" data-testid="export-csv">导出 CSV</button></view>
     <view class="section"><input v-model="query" class="field search-field" placeholder="搜索名称、科属或编号" aria-label="搜索观察记录" data-testid="search-records" /></view>
+    <view class="row action-row"><button class="plain" :disabled="!!taxonomyProgress || !stats.observations" @click="fillTaxonomy" data-testid="fill-project-taxonomy">{{ taxonomyProgress || '补查已有记录科属' }}</button><button v-if="taxonomyProgress" class="plain" @click="stopTaxonomy">停止补查</button></view>
+    <text class="subtitle small">只查询植物名称，不上传照片。已确认的科属请在人工复核中补充。</text>
     <view class="filter-row" role="group" aria-label="按复核状态筛选">
       <button role="button" tabindex="0" hover-class="control-pressed" :hover-start-time="0" :hover-stay-time="60" v-for="entry in [{key:'all',label:'全部'},{key:'pending',label:'待复核'},{key:'confirmed',label:'已确认'},{key:'undetermined',label:'暂未确定'}]" :key="entry.key" class="filter" :class="{active:filter === entry.key}" :aria-pressed="filter === entry.key" @click="filter = entry.key" :data-testid="'filter-' + entry.key">{{ entry.label }}</button>
     </view>

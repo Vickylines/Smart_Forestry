@@ -4,6 +4,7 @@ import { parseRecognition, applyPhotoResult } from '../domain/recognition';
 import type { Photo } from '../domain/forest';
 import { photoUrl } from './media';
 import { directConfigured, requestBaidu } from './baidu';
+import { enrichObservation } from './taxonomy';
 export const activeJob = ref('');
 let pause = false;
 async function encodePhoto(photo: Photo): Promise<string> {
@@ -41,6 +42,9 @@ export async function runRecognition(jobId: string) {
         const raw=await requestBaidu(image);
         const result=parseRecognition(raw);
         commit(s=>applyPhotoResult(s,jobId,id,photo.id,result));
+        // Persist the paid recognition first. Public taxonomy outages must never
+        // discard a successful photo result or trigger another paid recognition.
+        void enrichObservation(id).catch(() => {});
       }
       if (pause) break;
     }

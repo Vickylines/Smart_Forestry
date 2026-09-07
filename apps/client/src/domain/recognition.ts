@@ -48,11 +48,21 @@ export function parseRecognition(value: unknown): PhotoRecognition {
     if (!c || typeof c.name !== 'string' || !c.name.trim() || c.name.length > 100 || typeof c.score !== 'number' || !Number.isFinite(c.score) || c.score < 0 || c.score > 1 || (c.scientificName != null && typeof c.scientificName !== 'string')) throw new Error('识别候选格式不正确');
     if ([c.family, c.genus].some(field => field != null && (typeof field !== 'string' || field.length > 100))) throw new Error('识别科属格式不正确');
     const taxonomy = data.provider === 'baidu-plant' ? baiduTaxonomy(c.name.trim(), c.baikeInfo) : {};
-    return { ...taxonomy, name: c.name.trim(), scientificName: String(c.scientificName || '').slice(0,180), score: c.score,
+    return { ...taxonomy, name: c.name.trim(), scientificName: String(c.scientificName || baiduScientificName(data.provider === 'baidu-plant' ? c.name.trim() : '',c.baikeInfo)).slice(0,180), score: c.score,
       family: typeof c.family === 'string' ? c.family.trim() : taxonomy.family || '',
       genus: typeof c.genus === 'string' ? c.genus.trim() : taxonomy.genus || '' };
   });
   return { candidates: candidates.filter(c=>c.name!=='非植物').sort((a,b) => b.score-a.score), provider: data.provider.slice(0,100), recognizedAt: new Date().toISOString() };
+}
+// A botanical name explicitly attached to the matching encyclopedia entry can
+// disambiguate a common name, but is still validated by the taxonomy providers.
+export function baiduScientificName(name: string, value: unknown): string {
+  const info = value as Record<string, unknown> | null;
+  if (!name || typeof info?.description !== 'string') return '';
+  const intro = info.description.trim().slice(0,600).split(/[。！？!\n]/)[0];
+  if (!intro.startsWith(name) || !/^[（(，,：:\s]/.test(intro.slice(name.length))) return '';
+  const match = intro.match(/[（(]\s*(?:学名\s*[：:]\s*)?((?:×\s*)?[A-Z][a-z-]+\s+(?:×\s*)?[a-z][a-z-]+)(?=\s|[）)])/);
+  return match?.[1] || '';
 }
 export function migrateTasks(state: ForestState): ForestState {
   // 旧预览把用户照片放进演示队列；保留照片、复核和历史，转为真实待提交。

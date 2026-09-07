@@ -45,7 +45,7 @@ function clearKey() {
 }
 function openLibrary(view:string) { uni.navigateTo({ url:'/pages/library/index?view='+view }); }
 function privacy() {
-  uni.showModal({title:'存储与隐私',content:'资料保存在当前设备。识别时才上传照片至百度。密钥由 Android 系统密钥库加密保存，不包含在导出包中。卸载或清除应用数据会删除本机资料，请先在项目中导出 ZIP 备份。',showCancel:false,confirmText:'知道了'});
+  uni.showModal({title:'存储与隐私',content:'资料保存在当前设备。识别时上传照片至百度。补查科属只将植物名称发送至 iNaturalist、GBIF、Wikidata 公共分类库，不发送照片、位置或密钥。分类查询结果在本机缓存。密钥由 Android 系统密钥库加密保存，不包含在导出包中。卸载或清除应用数据会删除本机资料，请先在项目中导出 ZIP 备份。',showCancel:false,confirmText:'知道了'});
 }
 </script>
 <template>
@@ -77,7 +77,7 @@ function privacy() {
     <view class="section card settings-group">
       <button role="button" tabindex="0" class="settings-row" @click="privacy" data-testid="privacy"><text class="grow">存储与隐私</text><AppIcon name="chevron" :size="16" /></button>
     </view>
-    <text class="version">智慧林业 · 0.3.0 Beta 3</text>
+    <text class="version">智慧林业 · 0.3.0 Beta 4</text>
   </view>
 </template>
 <style scoped>

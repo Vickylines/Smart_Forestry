@@ -10,7 +10,7 @@ const labels:Record<Job['status'],string>={queued:'待识别',running:'处理中
 function configure(){uni.switchTab({url:'/pages/settings/index'});}
 function start(id:string){
   if(!directConfigured.value){configure();return;}
-  uni.showModal({title:'提交百度识图',content:'将照片上传至百度，消耗接口额度。结果需人工复核。',confirmText:'开始识别',success:async result=>{
+  uni.showModal({title:'提交百度识图',content:'将照片上传至百度，消耗接口额度。随后仅按植物名称查询公共分类库补全科属。结果需人工复核。',confirmText:'开始识别',success:async result=>{
     if(result.confirm)try{await runRecognition(id);}catch(e){toastError(e);}
   }});
 }

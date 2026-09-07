@@ -1,0 +1,40 @@
+{
+  "passed": true,
+  "rows": [
+    {
+      "name": "银杏",
+      "scientificName": "",
+      "score": 0.95,
+      "family": "银杏科",
+      "genus": "银杏属",
+      "familyScientificName": "Ginkgoaceae",
+      "genusScientificName": "Ginkgo",
+      "taxonomyStatus": "matched",
+      "taxonomySource": "iNaturalist 分类库",
+      "taxonomySourceUrl": "https://www.inaturalist.org/taxa/64350",
+      "taxonomyScientificName": "Ginkgo biloba",
+      "taxonomyEvidence": "名称匹配：Ginkgo biloba",
+      "taxonomyCheckedAt": "2026-09-07T05:47:46.688Z"
+    },
+    {
+      "name": "洋桔梗",
+      "scientificName": "",
+      "score": 0.95,
+      "family": "龙胆科",
+      "genus": "洋桔梗属",
+      "familyScientificName": "Gentianaceae",
+      "genusScientificName": "Eustoma",
+      "taxonomyStatus": "matched",
+      "taxonomySource": "iNaturalist 分类库",
+      "taxonomySourceUrl": "https://www.inaturalist.org/taxa/880921",
+      "taxonomyScientificName": "Eustoma russellianum",
+      "taxonomyEvidence": "名称匹配：Eustoma russellianum",
+      "taxonomyCheckedAt": "2026-09-07T05:47:48.731Z"
+    }
+  ],
+  "font": "16px",
+  "rejectedArbitraryUrl": true,
+  "device": "Pixel 4 XL",
+  "android": "16",
+  "apkVersion": "0.3.0-beta.4"
+}

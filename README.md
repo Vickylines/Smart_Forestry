@@ -4,9 +4,9 @@
 
 用于植物外业调查的 Android 应用：创建项目、拍摄照片、百度识图、人工复核，以及表格和原图导出。
 
-**当前测试版：v0.3.0-beta.3。** [下载 APK](https://github.com/Vickylines/Smart_Forestry/releases/tag/v0.3.0-beta.3)。
+**当前测试版：v0.3.0-beta.4。** [下载 APK](https://github.com/Vickylines/Smart_Forestry/releases/tag/v0.3.0-beta.4)。
 
-新增科属自动补全、人工复核与导出，修复切后台清空密钥输入及任务错误提示换行错位。默认字号保持不变，详见[Beta 3 验收记录](docs/Beta3验收记录.md)。
+新增全球分类库查询、异名与园艺基础分类匹配，并支持补查旧记录。银杏、洋桔梗已验证；固定 100 名称中 95 个返回完整科属，**尚未达到或验证全球 99% 覆盖**。默认字号保持不变，详见[Beta 4 验收记录](docs/Beta4验收记录.md)。
 
 ## 开始使用
 
@@ -14,9 +14,10 @@
 2. 在设置中填写百度 **API Key** 和 **Secret Key**，点击“保存密钥”。
 3. “验证密钥”检查鉴权；“移除密钥”清除已保存凭据，保留调查资料。
 4. 新建项目，拍照或选择照片，在任务页提交识别，并人工核对名称。
-5. 导出 CSV 获取表格；导出 ZIP 获取表格、照片和复核记录。
+5. 旧记录可在项目页“补查已有记录科属”；已确认记录可在人工复核页补查并保存，原人工结论不会自动覆盖。
+6. 导出 CSV 获取表格；导出 ZIP 获取表格、照片和复核记录。
 
-APK 不包含识别密钥。填写的密钥通过 Android Keystore 与 AES-GCM 加密保存，不进入导出包或应用备份。提交识别时才上传照片至百度。联网识别需要本人账号开通相应服务并具备额度；验证鉴权不等于验证剩余额度。本轮没有进行真实植物识别准确率评测。
+APK 不包含识别密钥。填写的密钥通过 Android Keystore 与 AES-GCM 加密保存，不进入导出包或应用备份。提交识别时才上传照片至百度。科属查询仅将名称发送至 iNaturalist、GBIF 和 Wikidata，不发送照片、位置或密钥，无需额外 API Key。联网识别需要本人账号开通相应服务并具备额度；验证鉴权不等于验证剩余额度。本轮没有进行真实植物照片识别准确率评测。
 
 首次启动无示例数据。升级会移除旧示例，但保留添加在旧示例项目中的真实记录。设置中的项目、观察、照片均可打开；项目删除需确认，并同时删除关联记录、任务及本机照片。
 
@@ -37,7 +38,7 @@ npm run build:h5
 npm run dev:h5
 ~~~
 
-另开终端，将 APP_URL 环境变量设为预览地址，再运行 npm run test:browser、npm run test:integration 和 npm run test:regressions。识别集成测试使用模拟原生桥接响应，不消耗百度额度。
+另开终端，将 APP_URL 环境变量设为预览地址，再运行 npm run test:browser、npm run test:integration、npm run test:regressions 和 npm run test:taxonomy。识别集成测试使用模拟原生桥接响应，不消耗百度额度。npm run test:taxonomy:live 可单独运行真实分类库的 100 名称固定样本测量；结果输出到 .preview/beta4/taxonomy-live.json，不自动作为全球覆盖或准确率声明。
 
 ~~~powershell
 ./apps/android-preview/build.ps1 -JdkPath '你的JDK17目录' -SdkPath '你的AndroidSDK目录'
@@ -52,4 +53,4 @@ npm run dev:h5
 - 已验证运行平台为 Android；微信和 app-plus 资源编译不代表对应平台已经实机验收。
 - 开发编译工具仍有依赖审计告警；已更新兼容的安全补丁，详情见[验收记录](docs/Beta1验收记录.md)。APK 不包含开发服务器。开发服务不可对公网开放，也不要用于打开不受信任的项目。
 
-详见[中英文发布说明](docs/releases/v0.3.0-beta.3.md)和[本轮验收记录](docs/Beta3验收记录.md)。反馈问题时请说明应用版本、机型与系统、复现步骤及预期／实际结果；不要附带密钥或私人照片。
+详见[中英文发布说明](docs/releases/v0.3.0-beta.4.md)和[本轮验收记录](docs/Beta4验收记录.md)。反馈问题时请说明应用版本、机型与系统、复现步骤及预期／实际结果；不要附带密钥或私人照片。

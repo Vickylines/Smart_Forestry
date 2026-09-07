@@ -48,7 +48,7 @@ if ($Inspection) {
     $inspectionSources = @(Get-ChildItem -LiteralPath (Join-Path $nativePath 'src') -Filter '*.java' -Recurse)
     $inspectionSources += Get-Item -LiteralPath (Join-Path $nativePath 'AndroidManifest.xml')
     foreach ($source in $inspectionSources) {
-        $body = [IO.File]::ReadAllText($source.FullName).Replace('cn.zhihuilinye.preview', 'cn.zhihuilinye.preview.qa').Replace('android:debuggable="false"', 'android:debuggable="true"').Replace('android:label="智慧林业"', 'android:label="智慧林业 QA"')
+        $body = [IO.File]::ReadAllText($source.FullName).Replace('cn.zhihuilinye.preview', 'cn.zhihuilinye.preview.qa').Replace('android:debuggable="false"', 'android:debuggable="true"').Replace('android:label="智慧林业"', 'android:label="智慧林业 QA"').Replace('setContentView(frame);', 'setContentView(frame); getWindow().addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);')
         [IO.File]::WriteAllText($source.FullName, $body, [Text.UTF8Encoding]::new($false))
     }
     $inspectionManifest = Join-Path $nativePath 'AndroidManifest.xml'
@@ -62,7 +62,7 @@ $baseApk = Join-Path $buildPath 'base.apk'
 $classesJar = Join-Path $buildPath 'classes.jar'
 $alignedApk = Join-Path $buildPath 'aligned.apk'
 $signedApk = Join-Path $buildPath 'signed.apk'
-$version = '0.3.0-beta.3'
+$version = '0.3.0-beta.4'
 $suffix = if ($Inspection) { '-inspection' } else { '' }
 $finalApk = Join-Path $outputPath ('zhihuilinye-' + $version + $suffix + '.apk')
 
