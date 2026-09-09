@@ -4,9 +4,11 @@
 
 An Android app for field plant surveys: create projects, capture photos, identify plants with Baidu, review names, and export records with original photos.
 
-**Current beta: v0.3.0-beta.4.** [Download the APK](https://github.com/Vickylines/Smart_Forestry/releases/tag/v0.3.0-beta.4).
+**Current stable release: v0.3.0.** [Download the APK](https://github.com/Vickylines/Smart_Forestry/releases/tag/v0.3.0).
 
-Adds global taxonomy lookups, synonyms, cultivar base taxa and enrichment of existing records. Ginkgo and lisianthus are verified. A fixed sample returned both family and genus for 95 of 100 names; **global 99% coverage has not been achieved or established**. Default font sizes are unchanged. See the [Beta 4 verification record](docs/Beta4验收记录.md).
+Settings now opens the project repository through an external browser or GitHub app. Fixes stale taxonomy after an unsuccessful match, loss of enriched taxonomy when a later photo scores higher, and overlapping capture actions during photo removal. See the [release verification record](docs/Release0.3.0验收记录.md).
+
+Global taxonomy lookups, synonyms, cultivar base taxa and existing-record enrichment remain available. The Beta 4 fixed sample returned both family and genus for 95 of 100 names; **global 99% coverage has not been achieved or established**. This historical sample is not a photo-identification accuracy measurement. Default font sizes are unchanged. See the [Beta 4 verification record](docs/Beta4验收记录.md).
 
 ## Getting started
 
@@ -16,6 +18,7 @@ Adds global taxonomy lookups, synonyms, cultivar base taxa and enrichment of exi
 4. Create a project, take or select photos, and start identification from Tasks. Review the returned names before using them.
 5. Use the project taxonomy lookup to enrich existing candidates. Confirmed records can be updated explicitly through review; automatic enrichment preserves manual conclusions.
 6. Export CSV for records, or ZIP for records, photos and review history.
+7. Tap **Project repository** in Settings to open the source and release downloads in the system browser or installed GitHub app.
 
 The APK contains no identification credentials. Credentials are encrypted with AES-GCM using an Android Keystore key; they are excluded from exports and app backups. Photos are uploaded to Baidu only when an identification task is submitted. Taxonomy lookups send names only to iNaturalist, GBIF and Wikidata, without photos, locations or credentials, and require no additional API key. Identification requires internet access and the appropriate Baidu service permissions/quota. The authentication check does not verify remaining quota. No live photo-identification accuracy benchmark was performed for this release.
 
@@ -53,4 +56,4 @@ The distribution APK has application/WebView debugging disabled. `-Inspection` b
 - Android is the tested runtime. WeChat/app-plus resource compilation does not constitute device validation for those platforms.
 - The dependency audit still reports findings in the development compiler/server toolchain. Compatible security updates have been applied; see the [audit record](docs/Beta1验收记录.md). No development server is bundled in the APK. Do not expose the development server or use it to open untrusted projects.
 
-See the [bilingual release notes](docs/releases/v0.3.0-beta.4.md) and [validation record](docs/Beta4验收记录.md). Report issues with the app version, Android/device version, steps, and expected/actual results. Do not include keys or private photos.
+This stable APK is distributed through GitHub Releases; it has not been submitted to an app store. See the [bilingual release notes](docs/releases/v0.3.0.md) and [validation record](docs/Release0.3.0验收记录.md). Report issues with the app version, Android/device version, steps, and expected/actual results. Do not include keys or private photos.

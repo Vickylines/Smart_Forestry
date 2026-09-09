@@ -22,6 +22,35 @@ async function check(name,body){
 const state=page=>page.evaluate(()=>JSON.parse(localStorage.getItem('forest-observer:state:v1')));
 const byId=(page,id)=>page.locator('[data-testid="'+id+'"]');
 
+await check('repository-browser-link',async(context,page)=>{
+  const repository='https://github.com/Vickylines/Smart_Forestry';
+  await context.route(repository,route=>route.fulfill({contentType:'text/html',body:'Repository destination'}));
+  await page.goto(base+'#/pages/settings/index');
+  const link=byId(page,'open-repository');await link.waitFor();
+  assert.ok((await link.innerText()).includes(repository));
+  for(const width of [320,390]) {
+    await page.setViewportSize({width,height:844});
+    assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
+  }
+  await link.scrollIntoViewIfNeeded();await page.screenshot({path:output+'repository-settings.png'});
+  const original=page.url(),before=await state(page);
+  const opened=context.waitForEvent('page');await link.focus();await page.keyboard.press('Enter');
+  const popup=await opened;await popup.waitForURL(repository);
+  assert.equal(await popup.evaluate(()=>window.opener),null);
+  assert.equal(page.url(),original);assert.deepEqual(await state(page),before);
+  await popup.close();
+});
+
+await check('repository-native-link',async(context,page)=>{
+  await context.addInitScript(()=>{window.repositoryOpens=0;window.ForestAndroidPreview={openRepository:()=>{window.repositoryOpens++;}};});
+  await page.goto(base+'#/pages/settings/index');
+  const original=page.url();await byId(page,'open-repository').click();
+  assert.equal(await page.evaluate(()=>window.repositoryOpens),1);assert.equal(page.url(),original);
+  await page.evaluate(()=>{delete window.ForestAndroidPreview.openRepository;});
+  await byId(page,'open-repository').click();
+  await page.getByText('请更新 Android 安装包后打开仓库',{exact:true}).waitFor();
+});
+
 await check('credential-draft-background',async(context,page)=>{
   await context.addInitScript(()=>{
     window.ForestAndroidPreview={baiduConfigured:()=>false,requestBaidu:()=>{},saveBaidu:()=>!window.qaSaveFailure};
@@ -151,7 +180,10 @@ await check('capture-draft-and-retry',async(context,page)=>{
   await page.goto(base+'#/pages/capture/index?projectId='+project.id);
   await byId(page,'choose-photos').waitFor();assert.equal(await page.locator('.photo-cell').count(),0,'Saved drafts must not return as duplicates');
   await recover('third.png');await page.getByText('已选 1 张',{exact:true}).waitFor();
-  await page.locator('.remove-photo').click();await page.reload();await byId(page,'choose-photos').waitFor();
+  await page.locator('.remove-photo').click();
+  // Wait for the photo deletion to finish before simulating a renderer restart.
+  await page.waitForFunction(()=>document.querySelector('[data-testid="choose-photos"]').getAttribute('aria-disabled')==='false');
+  await page.reload();await byId(page,'choose-photos').waitFor();
   assert.equal(await page.locator('.photo-cell').count(),0,'Removed captures must stay removed');
   await page.evaluate(()=>{
     window.qaSetItem=Storage.prototype.setItem;

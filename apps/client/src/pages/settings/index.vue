@@ -5,6 +5,7 @@ import { activeJob } from '../../services/recognition';
 import { forest } from '../../data/store';
 import { projectStats } from '../../domain/forest';
 import { directAvailable, directConfigured, saveBaidu, requestBaidu } from '../../services/baidu';
+import { openRepository, repositoryUrl } from '../../services/repository';
 import LocalNotice from '../../components/LocalNotice.vue';
 import AppIcon from '../../components/AppIcon.vue';
 const stats = computed(() => projectStats(forest.value));
@@ -76,11 +77,16 @@ function privacy() {
     </view>
     <view class="section card settings-group">
       <button role="button" tabindex="0" class="settings-row" @click="privacy" data-testid="privacy"><text class="grow">存储与隐私</text><AppIcon name="chevron" :size="16" /></button>
+      <button role="button" tabindex="0" class="settings-row" @click="openRepository" data-testid="open-repository" aria-label="打开项目仓库">
+        <view class="grow repository-details"><text>项目仓库</text><text class="repository-url">{{ repositoryUrl }}</text></view><AppIcon name="chevron" :size="16" />
+      </button>
     </view>
-    <text class="version">智慧林业 · 0.3.0 Beta 4</text>
+    <text class="version">智慧林业 · 0.3.0 正式版</text>
   </view>
 </template>
 <style scoped>
 .key-actions { margin-top:8px; }
+.repository-details { min-width:0; text-align:left; }
+.repository-url { display:block; margin-top:4px; color:var(--secondary); font-size:.75rem; overflow-wrap:anywhere; }
 .version { display:block; margin-top:32px; text-align:center; color:var(--secondary); font-size:.75rem; }
 </style>

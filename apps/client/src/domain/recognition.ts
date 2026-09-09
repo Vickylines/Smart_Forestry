@@ -78,7 +78,17 @@ export function applyPhotoResult(state: ForestState, jobId: string, observationI
   const item = state.observations.find(o => o.id === observationId);
   if (!job || !item || item.isDemo || !job.observationIds.includes(item.id) || !item.photos.some(p => p.id === photoId)) throw new Error('识别任务与照片不匹配');
   if (item.recognitionPhotos?.[photoId]) return state;
-  const outcomes = {...item.recognitionPhotos,[photoId]:result};
+  // Name lookups can finish between two photo responses. Carry their latest
+  // result onto identical candidates without changing the new photo's score.
+  const known = Object.values(item.recognitionPhotos || {}).flatMap(entry => entry.candidates);
+  const candidates = result.candidates.map(candidate => {
+    const latest = [...known,candidate].filter(c => c.name === candidate.name && c.scientificName === candidate.scientificName && c.taxonomyCheckedAt)
+      .sort((a,b) => Date.parse(b.taxonomyCheckedAt!) - Date.parse(a.taxonomyCheckedAt!))[0];
+    if (!latest) return candidate;
+    const { name, scientificName, score, photoId: sourcePhoto, ...taxonomy } = latest;
+    return {...candidate,...taxonomy};
+  });
+  const outcomes = {...item.recognitionPhotos,[photoId]:{...result,candidates}};
   const byName = new Map<string,Candidate>();
   Object.entries(outcomes).forEach(([id,entry]) => entry.candidates.forEach(c => {
     const key = c.scientificName || c.name;

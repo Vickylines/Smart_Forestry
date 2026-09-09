@@ -118,10 +118,12 @@ function choose(source: 'album' | 'camera') {
 }
 async function removePhoto(photo: Photo) {
   if (busy.value) return;
+  importing.value = true;
   try {
     updateDraft({photos:photos.value.filter(p => p.id !== photo.id)});
     await removeOwnedPhoto(photo);
   } catch (reason) { error.value = reason instanceof Error ? reason.message : '照片移除失败'; }
+  finally { importing.value = false; }
 }
 async function save() {
   if (busy.value) return;

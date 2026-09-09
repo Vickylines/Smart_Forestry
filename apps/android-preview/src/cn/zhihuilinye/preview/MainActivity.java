@@ -252,6 +252,18 @@ public final class MainActivity extends Activity {
     @Override public void onBackPressed() { navigateBack(); }
 
     public final class CsvBridge {
+        @JavascriptInterface public void openRepository() {
+            // Fixed destination only. External pages never receive the app bridge.
+            runOnUiThread(() -> {
+                if (isFinishing() || isDestroyed()) return;
+                Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/Vickylines/Smart_Forestry"));
+                intent.addCategory(Intent.CATEGORY_BROWSABLE);
+                try { startActivity(intent); }
+                catch (ActivityNotFoundException | SecurityException error) {
+                    Toast.makeText(MainActivity.this, "无法打开链接，请安装或启用浏览器后重试", Toast.LENGTH_LONG).show();
+                }
+            });
+        }
         @JavascriptInterface public void setCaptureProject(String id) {
             if (id != null && id.matches("[A-Za-z0-9_-]{1,100}")) captureProject = id;
         }

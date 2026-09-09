@@ -102,6 +102,43 @@ test('已有记录补查会持久化每张照片的候选，保留人工结论�
   assert.equal(after.confirmedFamily,'手填科');assert.equal(after.confirmedGenus,'');assert.equal(after.revision,before.revision);assert.deepEqual(after.reviews,before.reviews);
   assert.deepEqual(state.observations[0],before);
 });
+test('重新补查未匹配时清除旧候选分类，网络失败保留已知值和人工复核',()=>{
+  let state=makeProject(emptyState(),'重查','');
+  state=addBatch(state,state.projects[0].id,[{id:'p1',uri:'idb:p1',name:'1.jpg',bytes:1}],true,false);
+  const id=state.observations[0].id,job=state.jobs[0].id,key=taxonomyKey('银杏');
+  state=applyPhotoResult(state,job,id,'p1',parseRecognition({provider:'baidu-plant',candidates:[{name:'银杏',score:.8}]}));
+  state=applyCandidateTaxonomy(state,id,key,{family:'银杏科',genus:'银杏属',taxonomyScientificName:'Ginkgo biloba',taxonomySource:'旧分类库',taxonomyEvidence:'旧结果',taxonomyStatus:'matched',taxonomyCheckedAt:'2026-09-07T00:00:00Z'});
+  state=saveReview(state,id,0,{decision:'confirmed',name:'银杏',scientificName:'Ginkgo biloba',family:'人工科',genus:'人工属',note:'已复核'});
+  const unavailable=applyCandidateTaxonomy(state,id,key,{taxonomyStatus:'unavailable',taxonomyCheckedAt:'2026-09-09T00:00:00Z'});
+  assert.equal(unavailable.observations[0].candidates[0].genus,'银杏属');
+  for(const status of ['not-found','ambiguous']) {
+    const next=applyCandidateTaxonomy(state,id,key,{taxonomyStatus:status,taxonomyCheckedAt:'2026-09-09T00:00:00Z'}).observations[0];
+    for(const c of [next.candidates[0],next.recognitionPhotos.p1.candidates[0]]) {
+      assert.equal(c.genus,'','A definitive failed match must not retain a stale genus');
+      assert.equal(c.taxonomyScientificName,'');assert.equal(c.taxonomySource,'');
+    }
+    assert.equal(next.confirmedGenus,'人工属');assert.deepEqual(next.reviews,state.observations[0].reviews);
+  }
+});
+
+test('同株后续照片得分更高时保留同名候选已补全科属，不串用其他名称',()=>{
+  let state=makeProject(emptyState(),'同株','');
+  state=addBatch(state,state.projects[0].id,['p1','p2','p3'].map(id=>({id,uri:'idb:'+id,name:id+'.jpg',bytes:1})),true,false);
+  const id=state.observations[0].id,job=state.jobs[0].id;
+  const result=score=>parseRecognition({provider:'baidu-plant',candidates:[{name:'银杏',score}]});
+  state=applyPhotoResult(state,job,id,'p1',result(.7));
+  state=applyCandidateTaxonomy(state,id,taxonomyKey('银杏'),{family:'银杏科',genus:'银杏属',taxonomyScientificName:'Ginkgo biloba',taxonomyStatus:'matched',taxonomyCheckedAt:'2026-09-09T00:00:00Z'});
+  state=applyPhotoResult(state,job,id,'p2',result(.95));
+  assert.equal(state.observations[0].candidates[0].score,.95);
+  assert.equal(state.observations[0].candidates[0].photoId,'p2');
+  assert.equal(state.observations[0].candidates[0].genus,'银杏属');
+  assert.equal(state.observations[0].recognitionPhotos.p2.candidates[0].genus,'银杏属');
+  state=applyPhotoResult(state,job,id,'p3',parseRecognition({provider:'baidu-plant',candidates:[{name:'另一植物',score:.99}]}));
+  assert.equal(state.observations[0].candidates[0].name,'另一植物');
+  assert.equal(state.observations[0].candidates[0].genus,'');
+  assert.equal(state.jobs[0].status,'completed');
+});
+
 test('分类查询地址限定为固定公共接口，ID 参数不可注入其他路径',()=>{
   assert.throws(()=>taxonomyUrl('inat-taxa','1/../../private'));
   assert.throws(()=>taxonomyUrl('wiki-entities','Q1&token=x'));

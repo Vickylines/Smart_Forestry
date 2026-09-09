@@ -145,7 +145,13 @@ export async function resolveTaxonomy(name: string, scientificName: string, requ
 }
 
 export function applyCandidateTaxonomy(state: ForestState, observationId: string, key: string, result: TaxonomyResult): ForestState {
-  const enrich = (c: Candidate) => taxonomyKey(c.name, c.scientificName) === key ? {...c, ...result} : c;
+  // A completed lookup replaces the old classification, including empty ranks.
+  // A network outage retains known values so it cannot erase useful offline data.
+  const replacement = result.taxonomyStatus === 'unavailable' ? result : {
+    family:'', genus:'', familyScientificName:'', genusScientificName:'',
+    taxonomyScientificName:'', taxonomySource:'', taxonomySourceUrl:'', taxonomyEvidence:'', ...result
+  };
+  const enrich = (c: Candidate) => taxonomyKey(c.name, c.scientificName) === key ? {...c, ...replacement} : c;
   return {...state,observations:state.observations.map(o => o.id !== observationId ? o : {...o,
     candidates:o.candidates.map(enrich),
     ...(o.recognitionPhotos ? {recognitionPhotos:Object.fromEntries(Object.entries(o.recognitionPhotos).map(([id,entry]) => [id,{...entry,candidates:entry.candidates.map(enrich)}]))} : {})
